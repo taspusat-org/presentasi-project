@@ -1,0 +1,1581 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alur Rekrutmen Karyawan</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Tampilan sengaja satu tema terang, sama dengan versi cetak (PDF). Stage 1280x720 diskalakan ke layar. */
+html, body { height: 100%; overflow: hidden; background: #E4E2DB; }
+body { position: relative; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #1f2328; }
+#rotate { position: absolute; left: 16px; right: 16px; bottom: 16px; text-align: center; font-size: 13px; color: #5F5E5A; }
+button:focus-visible { outline: 2px solid #534AB7; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+#stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #fff;
+         overflow: hidden; box-shadow: 0 2px 28px rgba(0,0,0,.14); }
+.screen { position: absolute; left: 0; top: 0; right: 0; bottom: 52px; padding: 28px 48px 0; display: none; }
+.screen.on { display: block; }
+.kicker { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #534AB7; font-weight: 600; }
+h2 { font-size: 30px; font-weight: 600; margin: 4px 0 6px; line-height: 1.2; }
+.lead { font-size: 16px; color: #5F5E5A; margin-bottom: 16px; line-height: 1.4; }
+code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: .92em; color: #3C3489; }
+
+/* palet: warna mengikuti status orang */
+.g { --bg:#F1EFE8; --bd:#5F5E5A; --tx:#444441; }
+.p { --bg:#EEEDFE; --bd:#534AB7; --tx:#3C3489; }
+.t { --bg:#E1F5EE; --bd:#0F6E56; --tx:#085041; }
+.r { --bg:#FCEBEB; --bd:#A32D2D; --tx:#791F1F; }
+.a { --bg:#FAEEDA; --bd:#854F0B; --tx:#633806; }
+
+/* elemen yang bisa di-hover */
+[data-pop] { cursor: help; transition: box-shadow .15s, opacity .15s; }
+[data-pop]:hover, [data-pop]:focus-visible, [data-pop].pin { box-shadow: 0 0 0 2px var(--bd, #534AB7), 0 6px 18px rgba(0,0,0,.08); outline: none; }
+[data-go] { cursor: pointer; }
+.more { display: none; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; background: var(--bg); color: var(--tx); border: 1px solid var(--bd);
+        font-size: 12px; font-weight: 600; font-family: Consolas, monospace; }
+.pill { display: inline-block; padding: 3px 11px; border-radius: 999px; background: var(--bg); color: var(--tx); border: 1px solid var(--bd);
+        font-size: 13px; font-weight: 600; }
+.tbls code { display: inline-block; background: #F1EFE8; border-radius: 5px; padding: 0 6px; margin: 0 3px 3px 0; font-size: 12px; color: #444441; }
+.note { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.note div { border-left: 3px solid var(--bd); background: var(--bg); padding: 10px 14px; font-size: 14px; line-height: 1.4; }
+.note div b { color: var(--tx); display: block; margin-bottom: 2px; }
+
+/* popover */
+#pop { position: absolute; z-index: 50; display: none; max-width: 440px; min-width: 250px; background: #fff; border: 1px solid #D3D1C7;
+       border-left: 4px solid var(--bd, #534AB7); border-radius: 10px; box-shadow: 0 12px 32px rgba(31,35,40,.18);
+       padding: 12px 15px; font-size: 13px; line-height: 1.45; pointer-events: none; }
+#pop.on { display: block; }
+#pop.wide { max-width: 480px; }
+#pop h4 { font-size: 15px; font-weight: 600; margin-bottom: 3px; color: var(--tx, #1f2328); }
+#pop .sub { font-size: 12px; color: #888780; margin-bottom: 8px; }
+#pop dl { display: grid; grid-template-columns: 108px 1fr; gap: 5px 10px; }
+#pop dt { color: #888780; font-size: 12px; padding-top: 1px; }
+#pop p { margin-bottom: 6px; }
+#pop ul, #pop ol { padding-left: 17px; margin: 3px 0 4px; }
+#pop li { margin-bottom: 2px; }
+#pop .hint { font-size: 11.5px; color: #888780; margin-top: 8px; border-top: 1px dashed #E5E3DC; padding-top: 6px; }
+#pop .opt { display: flex; gap: 7px; align-items: flex-start; padding: 3px 0; border-bottom: 1px dashed #EEECE6; }
+#pop .opt i { font-style: normal; font-weight: 600; color: #888780; width: 12px; flex: none; }
+#pop .opt span { flex: 1; }
+.sc { flex: none; width: 20px; height: 18px; border-radius: 4px; text-align: center; font-size: 11.5px; line-height: 18px; font-weight: 600; font-style: normal; }
+.s4 { background: #E1F5EE; color: #085041; } .s3 { background: #F1EFE8; color: #444441; }
+.s2 { background: #FAEEDA; color: #633806; } .s1 { background: #FCEBEB; color: #791F1F; }
+#pop .rl { display: flex; gap: 6px; align-items: center; font-size: 12.5px; padding: 1px 0; }
+#pop .rl i { width: 18px; height: 3px; border-radius: 2px; flex: none; }
+
+/* navigasi */
+#nav { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; border-top: 1px solid #E5E3DC; display: flex; align-items: center;
+       gap: 12px; padding: 0 16px 0 48px; background: #fff; z-index: 30; }
+#nav .brand { font-size: 13px; color: #888780; white-space: nowrap; }
+#tabs { display: flex; gap: 3px; margin: 0 auto; }
+#tabs button { font: inherit; font-size: 12.5px; border: 1px solid transparent; background: none; color: #5F5E5A; padding: 5px 10px;
+               border-radius: 999px; cursor: pointer; white-space: nowrap; }
+#tabs button b { font-weight: 600; color: #B4B2A9; margin-right: 4px; }
+#tabs button:hover { background: #F1EFE8; }
+#tabs button.on { background: #EEEDFE; border-color: #534AB7; color: #3C3489; font-weight: 600; }
+#tabs button.on b { color: #534AB7; }
+.pager { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #888780; white-space: nowrap; }
+.pager button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #D3D1C7; background: #fff; cursor: pointer; font-size: 15px; color: #5F5E5A; }
+.pager button:hover { background: #F1EFE8; }
+
+/* 1. sampul */
+.cover { background: #FBFAF7; padding: 0; }
+.cover .cv { position: absolute; left: 96px; top: 96px; right: 96px; }
+.cover .kicker { font-size: 15px; }
+.cover h1 { font-size: 58px; font-weight: 600; line-height: 1.1; margin: 12px 0 16px; }
+.cover .sub { font-size: 21px; color: #5F5E5A; line-height: 1.45; max-width: 920px; }
+.kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 30px; }
+.kpis div { background: #fff; border: 1px solid #E5E3DC; border-radius: 12px; padding: 12px 16px; }
+.kpis div:hover { border-color: #534AB7; }
+.kpis b { display: block; font-size: 30px; font-weight: 600; color: #3C3489; line-height: 1.15; }
+.kpis span { font-size: 13.5px; color: #5F5E5A; }
+.howto { margin-top: 24px; font-size: 14px; color: #888780; display: flex; gap: 22px; }
+kbd { font-family: inherit; font-size: 12px; border: 1px solid #D3D1C7; border-bottom-width: 2px; border-radius: 5px; padding: 0 6px; background: #fff; color: #444441; }
+.strip { position: absolute; left: 0; right: 0; bottom: 0; display: flex; height: 54px; }
+.strip div { flex: 1; background: var(--bg); border-top: 4px solid var(--bd); color: var(--tx); font-size: 15px; font-weight: 600;
+             display: flex; align-items: center; justify-content: center; }
+.strip div span { font-weight: 400; margin-left: 6px; opacity: .8; }
+
+/* 2. alur 12 tahap */
+.phases { display: grid; grid-template-columns: repeat(5, 1fr); column-gap: 26px; }
+.ph { position: relative; border: 1.5px solid var(--bd); border-radius: 12px; background: #fff; height: 412px; }
+.ph header { background: var(--bg); color: var(--tx); padding: 10px 14px; border-radius: 10px 10px 0 0; border-bottom: 1.5px solid var(--bd); }
+.ph header b { display: block; font-size: 18px; font-weight: 600; }
+.ph header span { font-size: 12.5px; }
+.ph .list { padding: 10px; }
+.ph:not(:last-child)::after { content: "\203A"; position: absolute; right: -20px; top: 14px; font-size: 28px; color: #888780; line-height: 1; }
+.stc { display: flex; gap: 10px; align-items: flex-start; border: 1px solid #E5E3DC; border-radius: 9px; padding: 8px 10px; margin-bottom: 8px; background: #fff; }
+.stc > i { font-style: normal; font-weight: 600; min-width: 26px; height: 26px; border-radius: 7px; background: var(--bg); color: var(--tx);
+           border: 1.5px solid var(--bd); display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; flex: none; }
+.stc.opt > i { border-style: dashed; }
+.stc div { font-size: 14px; line-height: 1.3; font-weight: 600; }
+.stc small { display: block; font-weight: 400; color: #888780; font-size: 12px; margin-top: 2px; }
+.sumbar { margin-top: 14px; display: flex; gap: 26px; font-size: 14px; color: #5F5E5A; align-items: center; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--bg); border: 1.5px solid var(--bd); vertical-align: -1px; margin-right: 6px; }
+
+/* 3. form lamaran */
+.steps6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; margin-top: 4px; }
+.fs { position: relative; border: 1.5px solid #534AB7; border-radius: 12px; padding: 14px; background: #fff; height: 220px; display: flex; flex-direction: column; }
+.fs .no { width: 30px; height: 30px; border-radius: 50%; background: #534AB7; color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.fs b { font-size: 16px; font-weight: 600; line-height: 1.25; }
+.fs p { font-size: 13px; color: #5F5E5A; line-height: 1.4; margin-top: 6px; flex: 1; }
+.fs .tbls { font-size: 12px; }
+.fs:not(:last-child)::after { content: ""; position: absolute; right: -21px; top: 28px; width: 20px; border-top: 2px solid #534AB7; }
+.mockbar { margin: 18px 0 18px; display: flex; gap: 10px; align-items: center; font-size: 13.5px; color: #5F5E5A; }
+.mockbar span { padding: 4px 12px; border-radius: 999px; border: 1px solid #D3D1C7; }
+.mockbar span.done { background: #E1F5EE; border-color: #0F6E56; color: #085041; }
+
+/* 4. diagram seleksi & kontrak */
+.dg { position: relative; width: 1184px; height: 470px; }
+.dg > svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.nd { position: absolute; border: 1.5px solid var(--bd); background: var(--bg); color: var(--tx); border-radius: 10px; display: flex;
+      flex-direction: column; justify-content: center; text-align: center; padding: 6px 8px; }
+.nd.opt { border-style: dashed; }
+.nd.big { border-width: 2.5px; }
+.nd b { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; opacity: .85; }
+.nd span { font-size: 15px; font-weight: 600; line-height: 1.25; }
+.nd small { font-size: 12px; opacity: .9; }
+.legend-box { position: absolute; border: 1px solid #E5E3DC; border-radius: 12px; padding: 12px 14px; background: #fff; }
+.legend-box h5 { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #444441; }
+.lg { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 3px 0; color: #444441; }
+.lg svg { flex: none; }
+.dlabel { position: absolute; font-size: 12px; font-weight: 600; color: #5F5E5A; background: #fff; padding: 0 4px; }
+
+/* 5. kuesioner */
+.flow3 { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 34px; }
+.fstep { position: relative; border: 1.5px solid var(--bd); border-radius: 12px; background: #fff; display: flex; flex-direction: column; }
+.fstep header { background: var(--bg); color: var(--tx); padding: 9px 14px; border-radius: 10px 10px 0 0; border-bottom: 1.5px solid var(--bd);
+                display: flex; justify-content: space-between; align-items: baseline; }
+.fstep header b { font-size: 17px; font-weight: 600; }
+.fstep header span { font-size: 13px; }
+.fstep p { font-size: 14px; line-height: 1.42; padding: 10px 14px 6px; flex: 1; }
+.fstep .tbls { padding: 0 14px 10px; }
+.fstep:not(:last-child)::after { content: "\203A"; position: absolute; right: -24px; top: 38%; font-size: 30px; color: #888780; line-height: 1; }
+.rowlbl { font-size: 14px; font-weight: 600; color: #444441; margin: 16px 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.rowlbl small { font-weight: 400; color: #888780; font-size: 12.5px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips .pill { cursor: help; }
+.chips .pill[data-go] { cursor: pointer; }
+.cards6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.mc { border: 1px solid #E5E3DC; border-top: 3px solid var(--bd); border-radius: 0 0 10px 10px; padding: 10px 12px; background: #fff; }
+.mc b { font-size: 14px; display: block; margin-bottom: 3px; color: var(--tx); line-height: 1.25; }
+.mc span { font-size: 12.5px; color: #5F5E5A; line-height: 1.35; display: block; }
+/* isi popover kuesioner */
+.qbox { background: #FBFAF7; border: 1px solid #E5E3DC; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
+.radio { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.35; border: 1px solid #E5E3DC; border-radius: 7px; padding: 4px 9px; margin-bottom: 4px; }
+.radio > b { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #534AB7; flex: none; margin-top: 2px; background: #fff; }
+.radio.on { border-color: #534AB7; background: #EEEDFE; }
+.radio.on > b { background: radial-gradient(circle, #534AB7 0 3px, #fff 4px); }
+.ta { border: 1px solid #D3D1C7; border-radius: 6px; padding: 5px 9px; font-size: 12.5px; line-height: 1.45; background: #fff; }
+.dimrow { display: grid; grid-template-columns: 1fr 90px 22px; gap: 8px; align-items: center; font-size: 12.5px; padding: 2.5px 0; border-bottom: 1px dashed #EEECE6; }
+.b5 { display: flex; gap: 3px; }
+.b5 i { flex: 1; height: 9px; border-radius: 2px; background: #EEECE6; }
+.b5 i.on { background: #534AB7; }
+.dimrow > b { text-align: right; }
+.flag { font-size: 12px; border-left: 3px solid #854F0B; background: #FAEEDA; color: #633806; padding: 4px 9px; border-radius: 0 6px 6px 0; margin: 6px 0; }
+.decide { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 12.5px; }
+
+/* 6. bank soal */
+.ftabs { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+.ftabs > span { font-size: 13px; color: #888780; margin-right: 4px; }
+.ftabs button { font: inherit; font-size: 13.5px; padding: 5px 14px; border-radius: 999px; border: 1px solid #D3D1C7; background: #fff; color: #5F5E5A; cursor: pointer; }
+.ftabs button.on { background: #534AB7; border-color: #534AB7; color: #fff; font-weight: 600; }
+.qhead { font-size: 13.5px; font-weight: 600; color: #444441; margin: 2px 0 7px; display: flex; gap: 10px; align-items: baseline; }
+.qhead small { font-weight: 400; color: #888780; font-size: 12.5px; }
+.qg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.qcard { border: 1px solid #E5E3DC; border-radius: 10px; padding: 9px 11px; height: 118px; display: flex; flex-direction: column; background: #fff; }
+.qcard.umum { background: #FBFAF7; }
+.qcard .h { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #888780; }
+.qcard .h code { font-weight: 600; font-size: 12px; }
+.qcard .ty { border: 1px solid #D3D1C7; border-radius: 999px; padding: 0 7px; font-size: 11px; }
+.qcard b { font-size: 14px; line-height: 1.3; margin: 6px 0 4px; flex: 1; font-weight: 600; }
+.qcard .dm { font-size: 12px; font-weight: 600; color: #3C3489; }
+.scorebox { grid-column: span 2; border: 1px dashed #D3D1C7; border-radius: 10px; padding: 10px 13px; font-size: 12.5px; color: #444441; line-height: 1.45; }
+.scorebox b { display: block; font-size: 13px; margin-bottom: 3px; }
+.scorebox .sc { display: inline-block; margin-right: 2px; }
+.qfoot { margin-top: 14px; font-size: 13px; color: #888780; display: flex; gap: 22px; }
+
+/* 7. ERD */
+.erd { position: absolute; left: 20px; top: 132px; width: 1240px; height: 390px; }
+.erd svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.eh { position: absolute; height: 28px; border-radius: 7px; background: var(--bg); color: var(--tx); border: 1px solid var(--bd);
+      font-size: 12.5px; font-weight: 600; display: flex; align-items: center; padding: 0 9px; gap: 6px; white-space: nowrap; }
+.eh span { font-weight: 400; font-size: 11.5px; opacity: .85; }
+.et { position: absolute; height: 28px; border: 1.5px solid var(--bd); border-radius: 7px; background: #fff; font-family: Consolas, monospace;
+      font-size: 11px; display: flex; align-items: center; padding: 0 7px; color: #1f2328; z-index: 2; white-space: nowrap; transition: opacity .15s, box-shadow .15s; }
+.ebar { position: absolute; border: 2px solid #0F6E56; background: #E1F5EE; color: #085041; border-radius: 9px; z-index: 2; display: flex; align-items: center;
+        gap: 14px; padding: 0 14px; font-size: 13px; transition: opacity .15s; }
+.ebar code { font-size: 13px; font-weight: 600; color: #085041; }
+.erd.focus .et:not(.hl), .erd.focus .ebar:not(.hl) { opacity: .22; }
+.erd .et.hl.rel, .erd .ebar.hl.rel { box-shadow: 0 0 0 2.5px var(--hc); }
+.rp { fill: none; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.erd.focus .rp { stroke-width: 2.6; }
+.erd-ctl { position: absolute; right: 48px; top: 30px; display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #888780; }
+.erd-ctl button { font: inherit; font-size: 12.5px; padding: 4px 11px; border-radius: 999px; border: 1px solid #D3D1C7; background: #fff; color: #5F5E5A; cursor: pointer; }
+.erd-ctl button.on { background: #1f2328; border-color: #1f2328; color: #fff; }
+.erd-ctl button.fix { background: #F1EFE8; cursor: default; color: #444441; }
+.erd-leg { position: absolute; left: 0; top: 348px; width: 1240px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: #5F5E5A; align-items: center; }
+.erd.focus .erd-leg { visibility: hidden; }
+.erd-db { position: absolute; left: 20px; top: 540px; font-size: 13px; line-height: 1.6; color: #5F5E5A; }
+.erd-db code { font-size: 12.5px; }
+#pop.dock { max-width: none; width: 1240px; }
+.dockg { display: grid; grid-template-columns: 330px 1fr; gap: 20px; }
+.rls { display: flex; flex-wrap: wrap; gap: 1px 14px; margin-bottom: 3px; }
+.rls .rl { font-size: 12px !important; }
+.erd-leg > b { font-weight: 600; color: #444441; }
+.erd-leg span { display: inline-flex; align-items: center; gap: 5px; font-family: Consolas, monospace; font-size: 11.5px; }
+.erd-leg span i { width: 16px; height: 3px; border-radius: 2px; }
+
+/* 8. kamus data (layar tersendiri) */
+.erd-ctl button.km-open { background: #534AB7; border-color: #534AB7; color: #fff; font-weight: 600; margin-right: 8px; }
+.kd { position: absolute; left: 48px; right: 48px; top: 128px; bottom: 12px; display: grid; grid-template-columns: 410px 1fr; gap: 16px; }
+.kd-list { overflow-y: auto; border: 1px solid #E5E3DC; border-radius: 12px; padding: 3px 6px; background: #FBFAF7; }
+.kd-g { display: flex; gap: 4px; padding: 2px 0; border-top: 1px solid #E5E3DC; }
+.kd-g:first-child { border-top: 0; }
+.kd-g > b { width: 68px; flex: none; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--tx); padding: 1px 0 0 3px;
+            line-height: 1.3; font-weight: 600; }
+.kd-g > b small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 10.5px; color: #888780; }
+.kd-g > div { flex: 1; min-width: 0; }
+.kd-it { display: flex; align-items: baseline; gap: 5px; width: 100%; font: inherit; font-size: 12.5px; line-height: 17px; padding: 0 6px;
+         border: 0; border-radius: 6px; background: none; text-align: left; cursor: pointer; color: #1f2328; }
+.kd-it span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+.kd-it code { font-size: 10.5px; color: #888780; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.kd-it i { margin-left: auto; font-style: normal; font-size: 10.5px; color: #B4B2A9; flex: none; }
+.kd-it:hover { background: #F1EFE8; }
+.kd-it.on { background: var(--bg); box-shadow: inset 0 0 0 1px var(--bd); color: var(--tx); font-weight: 600; }
+.kd-it.on code, .kd-it.on i { color: var(--tx); }
+.kd-panel { border: 1px solid #D3D1C7; border-radius: 12px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: #fff; }
+.km-head { padding: 10px 16px 9px; border-bottom: 1px solid #E5E3DC; }
+.km-head h3 { font-size: 20px; font-weight: 600; margin-top: 1px; }
+.km-head h3 code { font-size: 14px; font-weight: 600; margin-left: 8px; }
+.km-head .sub { font-size: 12.5px; color: #5F5E5A; margin-top: 2px; line-height: 1.4; }
+.km-body { overflow: auto; padding: 0 14px 8px; flex: 1; }
+table.km { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.km th { position: sticky; top: 0; background: #F1EFE8; text-align: left; padding: 6px 7px; font-size: 12px; font-weight: 600; color: #444441;
+         border-bottom: 1.5px solid #B4B2A9; z-index: 1; }
+.km td { padding: 5px 7px; border-bottom: 1px solid #EEECE6; vertical-align: top; line-height: 1.4; }
+.km td.no { color: #888780; width: 26px; text-align: right; }
+.km td.kol { font-family: Consolas, monospace; width: 184px; color: #3C3489; font-weight: 600; }
+.km td.kol .tp { font-weight: 400; color: #5F5E5A; font-size: 11.5px; }
+.km td.arti { width: 150px; font-weight: 600; }
+.km td.wajib { width: 46px; text-align: center; }
+.km tr.umum td { color: #888780; }
+.km tr.umum td.kol, .km tr.umum td.arti { color: #888780; font-weight: 400; }
+.km .tag { display: inline-block; font-family: "Segoe UI", sans-serif; font-weight: 400; font-size: 11px; line-height: 15px; border-radius: 4px;
+           padding: 0 5px; margin: 1px 3px 1px 0; border: 1px solid #D3D1C7; color: #5F5E5A; background: #FBFAF7; white-space: nowrap; }
+.km .tag.ref { border-color: #534AB7; color: #3C3489; background: #EEEDFE; cursor: pointer; }
+.km .tag.ref:hover { background: #534AB7; color: #fff; }
+.km .tag.pk { border-color: #854F0B; color: #633806; background: #FAEEDA; }
+.km-foot { padding: 6px 16px; border-top: 1px solid #E5E3DC; font-size: 11.5px; color: #888780; line-height: 1.45; }
+#pop .kp { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; font-size: 12px; margin-top: 2px; }
+#pop .kp code { font-size: 11.5px; }
+
+/* 8. aturan & status */
+.rs { display: grid; grid-template-columns: 1.42fr 0.95fr 1.18fr; gap: 24px; }
+.vgl { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: #888780; font-weight: 600; margin: 10px 0 5px; }
+.vchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.vchip { font-family: Consolas, monospace; font-size: 11.5px; padding: 3px 8px; border: 1px solid #D3D1C7; border-radius: 6px; background: #fff;
+         color: #3C3489; font-weight: 600; }
+.colh { font-size: 15px; font-weight: 600; margin-bottom: 9px; color: #444441; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.rule { border: 1px solid #E5E3DC; border-top: 3px solid var(--bd); border-radius: 0 0 10px 10px; padding: 9px 12px; height: 92px; background: #fff; }
+.rule b { font-size: 14px; display: block; line-height: 1.25; margin-bottom: 3px; }
+.rule span { font-size: 12.5px; color: #5F5E5A; line-height: 1.35; display: block; }
+.stg { margin-bottom: 11px; }
+.stg small { display: block; font-size: 12px; color: #888780; margin-bottom: 5px; font-family: Consolas, monospace; }
+.stg .chip { margin: 0 4px 5px 0; cursor: help; font-size: 12px; }
+.auto { border: 1px solid #E5E3DC; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; background: #fff; }
+.auto code { font-size: 12.5px; font-weight: 600; display: block; }
+.auto span { font-size: 12.5px; color: #5F5E5A; line-height: 1.35; display: block; margin-top: 2px; }
+
+/* 9. gantt */
+.gantt { position: relative; margin-top: 30px; }
+.gantt .row { display: flex; align-items: center; height: 30px; }
+.gantt .lbl { width: 244px; font-size: 14.5px; padding-right: 14px; white-space: nowrap; }
+.gantt .lbl b { display: inline-block; width: 30px; color: #5F5E5A; font-weight: 600; }
+.gantt .track { position: relative; width: 900px; height: 30px; }
+.gantt .bar { position: absolute; top: 6px; height: 18px; border-radius: 4px; background: var(--bg); border: 1.2px solid var(--bd); }
+.gantt .bar.opt { border-style: dashed; }
+.gantt .bar em { position: absolute; left: calc(100% + 5px); top: 0; font-style: normal; font-size: 12px; color: #5F5E5A; white-space: nowrap; }
+.gantt .bar em.in { left: 10px; color: #085041; font-weight: 600; }
+.gridl { position: absolute; left: 244px; top: 0; width: 900px; }
+.gridl i { position: absolute; top: 0; bottom: 0; border-left: 1px solid #EEECE6; }
+.gridl i.ms { border-left: 2px dashed #0F6E56; }
+.axis { position: relative; margin-left: 244px; width: 900px; height: 22px; font-size: 12px; color: #888780; }
+.axis span { position: absolute; transform: translateX(-50%); top: 4px; }
+.mslbl { position: absolute; transform: translateX(-50%); top: -26px; font-size: 13px; font-weight: 600; color: #085041; background: #E1F5EE;
+         border: 1px solid #0F6E56; border-radius: 6px; padding: 1px 8px; white-space: nowrap; }
+
+/* 10. diskusi */
+.dk { display: grid; grid-template-columns: 1fr 360px; gap: 26px; }
+.dq { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dqc { border: 1px solid #E5E3DC; border-radius: 10px; padding: 10px 12px; height: 128px; background: #fff; display: flex; gap: 10px; }
+.dqc > i { font-style: normal; min-width: 26px; height: 26px; border-radius: 7px; background: #FAEEDA; color: #633806; border: 1.5px solid #854F0B;
+           display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex: none; }
+.dqc b { font-size: 14px; display: block; line-height: 1.25; margin-bottom: 3px; }
+.dqc span { font-size: 12.5px; color: #5F5E5A; line-height: 1.38; display: block; }
+.next { background: #E1F5EE; border: 1.5px solid #0F6E56; border-radius: 12px; padding: 16px 18px; }
+.next h3 { color: #085041; font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.next li { font-size: 14px; line-height: 1.42; margin: 0 0 7px 18px; }
+.thanks { margin-top: 14px; font-size: 15px; color: #5F5E5A; }
+.thanks b { color: #1f2328; font-size: 18px; margin-right: 8px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1. SAMPUL -->
+<section class="screen cover" data-tab="Sampul">
+  <div class="cv">
+    <div class="kicker">Bahan pembahasan proses HR · versi interaktif</div>
+    <h1>Alur Rekrutmen Karyawan</h1>
+    <p class="sub">Dari permintaan tenaga kerja (FPTK) sampai pengangkatan karyawan tetap, termasuk kuesioner kerja tahap 4 dan rancangan database pendukungnya.</p>
+    <div class="kpis">
+      <div data-go="2" title="Buka layar Alur"><b>12</b><span>tahap dalam 5 fase</span></div>
+      <div data-go="10" title="Buka layar Waktu"><b>± 41</b><span>hari sampai mulai kerja</span></div>
+      <div data-go="10" title="Buka layar Waktu"><b>± 134</b><span>hari sampai karyawan tetap</span></div>
+      <div data-go="6" title="Buka layar Bank soal"><b>28</b><span>soal kuesioner, 4 bidang</span></div>
+      <div data-go="7" title="Buka layar Database"><b>27</b><span>tabel, 50 relasi</span></div>
+    </div>
+    <div class="howto"><span>Arahkan kursor ke kartu untuk melihat detail · klik untuk menahan</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> pindah layar</span><span><kbd>F</kbd> layar penuh</span></div>
+  </div>
+  <div class="strip">
+    <div class="g">Persiapan<span>1</span></div><div class="p">Sourcing<span>2–3</span></div><div class="p">Seleksi<span>4–8</span></div>
+    <div class="t">Pra-kerja<span>9</span></div><div class="t">Karyawan<span>10–12</span></div>
+  </div>
+</section>
+
+<!-- 2. ALUR 12 TAHAP -->
+<section class="screen" data-tab="Alur">
+  <div class="kicker">1 · Gambaran besar</div>
+  <h2>12 tahap dalam 5 fase</h2>
+  <p class="lead">Arahkan kursor ke tahap untuk melihat kegiatan, penanggung jawab, output, target, dan tabel yang mencatatnya.</p>
+  <div class="phases" id="phases"></div>
+  <div class="sumbar">
+    <span><i class="dot g"></i>Proses internal</span><span><i class="dot p"></i>Pelamar / kandidat</span><span><i class="dot t"></i>Sudah karyawan</span>
+    <span>Kotak putus-putus = opsional</span>
+  </div>
+</section>
+
+<!-- 3. FORM LAMARAN -->
+<section class="screen" data-tab="Lamaran">
+  <div class="kicker">2 · Persiapan &amp; sourcing</div>
+  <h2>Tahap 3: form lamaran online 6 langkah</h2>
+  <p class="lead">Lamar cepat seperti di job portal: cukup CV. Arahkan kursor ke langkah untuk melihat isian, tabel penyimpanan, dan aturannya.</p>
+  <div class="steps6" id="steps6"></div>
+  <div class="mockbar">Contoh alamat form: <code>karir.perusahaan.co.id/lowongan/VAC-2026-001/lamar</code>
+    <span class="done">Nomor lamaran dikirim otomatis ke email</span><span>Status awal IN_PROGRESS</span></div>
+  <div class="note">
+    <div class="p"><b>Pelamar lama tidak isi ulang</b>Data diri tersimpan sekali; saat melamar lowongan lain cukup memperbarui profil.</div>
+    <div class="p"><b>Berkas lengkap belakangan</b>KTP, KK, NPWP, dan ijazah baru diminta saat pemberkasan di tahap 9.</div>
+    <div class="t"><b>Sesuai UU PDP</b>Waktu persetujuan pelamar tercatat sebagai bukti persetujuan pengolahan data pribadi.</div>
+  </div>
+</section>
+
+<!-- 4. SELEKSI & JALUR KONTRAK -->
+<section class="screen" data-tab="Seleksi">
+  <div class="kicker">3 · Seleksi sampai karyawan</div>
+  <h2>Lolos lanjut, gagal gugur, lalu bercabang PKWT / PKWTT</h2>
+  <p class="lead">Warna garis menunjukkan jenis perpindahan. Arahkan kursor ke kotak untuk melihat detail dan perubahan statusnya.</p>
+  <div class="dg">
+    <svg width="1184" height="470" viewBox="0 0 1184 470">
+      <defs>
+        <marker id="mp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#534AB7"/></marker>
+        <marker id="mt" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#0F6E56"/></marker>
+        <marker id="ma" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#C27C0E"/></marker>
+        <marker id="mb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#2563EB"/></marker>
+        <marker id="mr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#E24B4A"/></marker>
+        <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="#888780"/></marker>
+      </defs>
+      <g fill="none" stroke-width="2.2" stroke-linejoin="round">
+        <!-- gugur: tahap 4-8 ke REJECTED -->
+        <g stroke="#E24B4A" stroke-dasharray="5 4" marker-end="url(#mr)">
+          <path d="M80 100V56"/><path d="M272 100V56"/><path d="M464 100V56"/><path d="M656 100V56"/><path d="M848 100V56"/>
+        </g>
+        <!-- lolos antar tahap seleksi -->
+        <g stroke="#534AB7" marker-end="url(#mp)">
+          <path d="M160 136H188"/><path d="M352 136H380"/><path d="M544 136H572"/><path d="M736 136H764"/>
+          <path d="M928 136H962V214H80V256"/>
+        </g>
+        <!-- sudah karyawan -->
+        <g stroke="#0F6E56" marker-end="url(#mt)">
+          <path d="M160 298H204"/><path d="M630 368H662V328H684"/>
+        </g>
+        <path d="M370 298H405V264H434" stroke="#C27C0E" marker-end="url(#ma)"/>
+        <path d="M405 298V368H434" stroke="#2563EB" marker-end="url(#mb)"/>
+        <path d="M80 334V394" stroke="#888780" stroke-dasharray="5 4" marker-end="url(#mg)"/>
+        <path d="M662 368V420H684" stroke="#E24B4A" stroke-dasharray="5 4" marker-end="url(#mr)"/>
+      </g>
+    </svg>
+    <div class="dlabel" style="left:470px;top:206px">lolos tahap 4–8</div>
+    <div class="dlabel" style="left:360px;top:242px;color:#A0670B">PKWT</div>
+    <div class="dlabel" style="left:350px;top:374px;color:#2563EB">PKWTT</div>
+    <div class="dlabel" style="left:624px;top:306px;color:#0F6E56">lulus</div>
+    <div class="dlabel" style="left:600px;top:428px;color:#A32D2D">tidak lulus</div>
+
+    <div class="nd r" data-pop style="left:0;top:0;width:930px;height:52px"><span>Lamaran gugur</span><small>Status lamaran berubah menjadi REJECTED secara otomatis</small>
+      <div class="more"><h4>Lamaran gugur → <code>REJECTED</code></h4>
+        <p>HRD mencatat hasil <code>FAILED</code> di <code>application_stage_log</code> pada tahap 4–8.</p>
+        <p>Trigger <code>trg_application_stage_log_sync</code> langsung mengubah <code>application.status</code> menjadi <code>REJECTED</code> dan mengisi <code>closed_at</code>. HRD tidak perlu mengubahnya manual.</p></div></div>
+    <div class="nd p" data-stage="4" style="left:0;top:100px;width:160px;height:72px"><b>Tahap 4</b><span>Seleksi adm. &amp; kuesioner</span></div>
+    <div class="nd p" data-stage="5" style="left:192px;top:100px;width:160px;height:72px"><b>Tahap 5</b><span>Wawancara HRD</span></div>
+    <div class="nd p" data-stage="6" style="left:384px;top:100px;width:160px;height:72px"><b>Tahap 6</b><span>Tes DISC</span></div>
+    <div class="nd p" data-stage="7" style="left:576px;top:100px;width:160px;height:72px"><b>Tahap 7</b><span>Wawancara user</span></div>
+    <div class="nd p opt" data-stage="8" style="left:768px;top:100px;width:160px;height:72px"><b>Tahap 8 · opsional</b><span>Cek referensi</span></div>
+    <div class="nd t" data-stage="9" style="left:0;top:262px;width:160px;height:72px"><b>Tahap 9</b><span>Pemberkasan &amp; kontrak</span></div>
+    <div class="nd t" data-stage="10" style="left:210px;top:262px;width:160px;height:72px"><b>Tahap 10</b><span>Onboarding</span></div>
+    <div class="nd g" data-pop style="left:0;top:400px;width:160px;height:54px"><span>Kandidat mundur</span><small>Status WITHDRAWN</small>
+      <div class="more"><h4>Kandidat mundur → <code>WITHDRAWN</code></h4>
+        <p>Kandidat mengundurkan diri atau menolak isi kontrak di tahap 9. Lamaran ditutup dengan status <code>WITHDRAWN</code>, lalu kandidat berikutnya bisa diproses.</p>
+        <p class="hint">Sejak fase Penawaran dihapus, penolakan kontrak cukup dicatat sebagai WITHDRAWN.</p></div></div>
+    <div class="nd t" data-pop style="left:440px;top:236px;width:190px;height:56px"><span>Karyawan kontrak</span><small>PKWT · status CONTRACT</small>
+      <div class="more"><h4>Karyawan kontrak (PKWT)</h4>
+        <ul><li>Tanpa masa percobaan (UU Ketenagakerjaan Ps. 58).</li><li>Wajib punya tanggal akhir kontrak.</li>
+          <li><code>employee.status = CONTRACT</code>; alur selesai di tahap 10.</li></ul>
+        <p class="hint">Dijaga oleh <code>ck_employee_pkwt_status</code> dan <code>ck_contract_pkwt</code>.</p></div></div>
+    <div class="nd t" data-stage="11" style="left:440px;top:340px;width:190px;height:56px"><b>Tahap 11 · khusus PKWTT</b><span>Masa percobaan</span></div>
+    <div class="nd t big" data-stage="12" style="left:690px;top:300px;width:190px;height:56px"><span>Karyawan tetap</span><small>SK tahap 12 · PERMANENT</small></div>
+    <div class="nd r" data-pop style="left:690px;top:394px;width:190px;height:52px"><span>Tidak lulus</span><small>Status TERMINATED</small>
+      <div class="more"><h4>Tidak lulus masa percobaan</h4>
+        <p>Atasan memberi rekomendasi <code>FAIL</code> di <code>probation_review</code>. Perubahan status ke <code>TERMINATED</code> dicatat di <code>employee_status_history</code> dan otomatis diterapkan ke <code>employee.status</code>.</p></div></div>
+
+    <div class="legend-box" style="left:930px;top:236px;width:254px">
+      <h5>Arti warna garis</h5>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#534AB7" stroke-width="2.4"/></svg>Lolos ke tahap berikutnya</div>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#0F6E56" stroke-width="2.4"/></svg>Lanjut sebagai karyawan</div>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#C27C0E" stroke-width="2.4"/></svg>Jalur PKWT (kontrak)</div>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#2563EB" stroke-width="2.4"/></svg>Jalur PKWTT (tetap)</div>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#E24B4A" stroke-width="2.4" stroke-dasharray="5 4"/></svg>Gugur / tidak lulus</div>
+      <div class="lg"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#888780" stroke-width="2.4" stroke-dasharray="5 4"/></svg>Kandidat mundur</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. KUESIONER KERJA -->
+<section class="screen" data-tab="Kuesioner">
+  <div class="kicker">3 · Seleksi kandidat</div>
+  <h2>Tahap 4: seleksi administrasi &amp; kuesioner kerja</h2>
+  <p class="lead">Kandidat yang lolos cek CV mengisi 10 soal sesuai bidangnya. AI membantu merangkum jawaban, keputusan tetap di tangan HRD.</p>
+  <div class="flow3">
+    <div class="fstep p" data-pop tabindex="0"><header><b>4a · Cek CV</b><span>HRD · hari 1</span></header>
+      <p>CV dicocokkan dengan syarat di FPTK: pendidikan, pengalaman, domisili, dan ekspektasi gaji. Yang tidak memenuhi langsung gugur.</p>
+      <div class="tbls"><code>application_stage_log</code></div>
+      <div class="more"><h4>4a · Cek CV</h4>
+        <ul><li>Hasil dicatat di <code>application_stage_log</code> (tahap 4).</li>
+          <li>Hasil <code>FAILED</code> → status lamaran otomatis <code>REJECTED</code>.</li>
+          <li>Yang lolos langsung dikirimi link kuesioner. Bidang soal diambil dari jabatan yang dilamar (<code>job_position.job_field_id</code>).</li></ul></div></div>
+    <div class="fstep p" data-pop data-wide tabindex="0"><header><b>4b · Isi kuesioner</b><span>Kandidat · hari 1–3</span></header>
+      <p>Link unik dikirim lewat email dan WhatsApp, berlaku 2 × 24 jam. Isinya 10 soal (± 30 menit): 4 soal umum dan 6 soal sesuai bidang.</p>
+      <div class="tbls"><code>screening_response</code><code>screening_answer</code></div>
+      <div class="more"><h4>Contoh tampilan untuk kandidat</h4>
+        <div class="sub">Andi Pratama · Admin Operasional · soal 5 dari 10</div>
+        <div class="qbox">Saat menerima barang, jumlah fisik kurang 2 koli dari surat jalan. Sopir terburu-buru dan meminta Anda langsung tanda tangan. <b>Apa yang paling mungkin Anda lakukan?</b></div>
+        <div class="radio"><b></b>A · Tanda tangan dulu, selisihnya dilaporkan belakangan</div>
+        <div class="radio"><b></b>B · Menolak seluruh barang sampai kekurangannya dikirim</div>
+        <div class="radio on"><b></b>C · Mencatat selisih di surat jalan dengan foto dan paraf sopir, lalu melapor ke atasan</div>
+        <div class="radio"><b></b>D · Menahan sopir sambil menunggu instruksi atasan</div>
+        <div class="ta">Alasan: Kalau langsung tanda tangan, selisihnya jadi tanggungan gudang. Dengan catatan, foto, dan paraf sopir, selisihnya tercatat resmi.</div>
+        <p class="hint">Sebelum kirim: pernyataan "jawaban ditulis sendiri" (wajib) dan persetujuan analisis AI (opsional; bila tidak dicentang, hanya ditinjau HRD).</p></div></div>
+    <div class="fstep p" data-pop data-wide tabindex="0"><header><b>4c · Analisis &amp; keputusan</b><span>AI + HRD · hari 3–5</span></header>
+      <p>AI memberi skor 1–5 per dimensi beserta kutipan jawaban dan menyiapkan pertanyaan wawancara. HRD meninjau, boleh mengubah skor, lalu memutuskan.</p>
+      <div class="tbls"><code>screening_ai_review</code></div>
+      <div class="more"><h4>Contoh hasil: Andi Pratama</h4>
+        <div class="sub">Skor pilihan situasi 22 / 24 · rekomendasi AI: LANJUT</div>
+        <div class="dimrow"><span>Integritas</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><b>4</b></div>
+        <div class="dimrow"><span>Tanggung jawab</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><b>4</b></div>
+        <div class="dimrow"><span>Kerja sama &amp; komunikasi</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span><b>3</b></div>
+        <div class="dimrow"><span>Pemecahan masalah</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><b>5</b></div>
+        <div class="dimrow"><span>Ketahanan kerja</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span><b>3</b></div>
+        <div class="dimrow"><span>Ketelitian</span><span class="b5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><b>5</b></div>
+        <div class="flag"><b>PERLU_DIDALAMI</b> · UMUM-04: cerita kerja sama belum menunjukkan hasil yang jelas</div>
+        <div class="decide"><span class="chip t">HRD: Disesuaikan</span>Ketahanan kerja 3 → 4 · <b>Lolos, lanjut wawancara HRD</b></div></div></div>
+  </div>
+  <div class="rowlbl">Bidang soal <small>arahkan kursor untuk melihat 6 soalnya · klik untuk membuka bank soal</small></div>
+  <div class="chips" id="fieldChips"></div>
+  <div class="rowlbl">6 dimensi kepribadian kerja <small>arahkan kursor untuk melihat soal yang mengukurnya</small></div>
+  <div class="chips" id="dimChips"></div>
+  <div class="rowlbl">Jenis soal &amp; aturan pemakaian AI</div>
+  <div class="cards6">
+    <div class="mc p" data-pop tabindex="0"><b>Pilihan situasi + alasan</b><span>Pilih tindakan A–D, lalu tulis alasannya.</span>
+      <div class="more"><h4>Pilihan situasi + alasan</h4><p>6 soal per paket. Skor pilihan 1–4 diambil dari kunci HRD (maks. 24). Posisi jawaban terbaik sengaja diacak.</p><p>Alasannya dibaca AI untuk melihat apakah pilihan dan alasan konsisten.</p></div></div>
+    <div class="mc p" data-pop tabindex="0"><b>Cerita pengalaman</b><span>Kejadian nyata: situasi, tindakan, hasil.</span>
+      <div class="more"><h4>Cerita pengalaman</h4><p>4 soal per paket, minimal 300 karakter. Jawaban umum tanpa contoh nyata ditandai <code>JAWABAN_GENERIK</code> untuk didalami saat wawancara.</p><p class="hint">AI tidak bisa memastikan jawaban dibuat dengan bantuan AI; yang ditandai hanya jawaban tanpa contoh nyata.</p></div></div>
+    <div class="mc g" data-pop tabindex="0"><b>Beda dengan tes DISC</b><span>DISC = gaya perilaku; kuesioner = tindakan nyata.</span>
+      <div class="more"><h4>Beda dengan tes DISC (tahap 6)</h4><p>DISC memetakan gaya perilaku dengan alat tes baku. Kuesioner melihat cara kandidat bertindak di situasi kerja bidangnya, lalu menjadi bahan wawancara HRD.</p></div></div>
+    <div class="mc g" data-pop tabindex="0"><b>AI tidak melihat data pribadi</b><span>Hanya jawaban dan jabatan yang dikirim.</span>
+      <div class="more"><h4>AI tidak melihat data pribadi</h4><p>Nama, usia, jenis kelamin, foto, agama, dan asal daerah tidak ikut dikirim ke AI. Kuesioner juga tidak menanyakan agama, suku, status pernikahan, atau rencana punya anak.</p></div></div>
+    <div class="mc r" data-pop tabindex="0"><b>AI tidak menggugurkan kandidat</b><span>Lolos / gugur selalu diisi HRD.</span>
+      <div class="more"><h4>AI tidak menggugurkan kandidat</h4><p>AI hanya merekomendasikan <code>LANJUT</code>, <code>PERTIMBANGKAN</code>, atau <code>TIDAK_LANJUT</code>. Keputusan dicatat HRD di <code>application_stage_log</code>.</p><p>Kandidat berhak keberatan atas keputusan yang hanya didasarkan pada pemrosesan otomatis (UU 27/2022 Ps. 10). Kandidat yang tidak setuju dianalisis AI tetap diproses, hanya ditinjau HRD.</p></div></div>
+    <div class="mc t" data-pop tabindex="0"><b>Bisa diaudit</b><span>Model AI &amp; versi rubrik tercatat.</span>
+      <div class="more"><h4>Bisa diaudit</h4><p>Setiap analisis mencatat <code>model_name</code> dan <code>prompt_version</code>. Kecocokan penilaian AI dengan HRD dipantau dari <code>ai_agreement</code> (SETUJU / DISESUAIKAN / TIDAK_SETUJU).</p></div></div>
+  </div>
+</section>
+
+<!-- 6. BANK SOAL -->
+<section class="screen" data-tab="Bank soal">
+  <div class="kicker">Bank soal kuesioner kerja</div>
+  <h2>28 soal: 4 umum + 6 untuk setiap bidang</h2>
+  <p class="lead">Pilih bidang untuk melihat paket 10 soal yang diterima kandidat. Arahkan kursor ke soal untuk melihat pilihan, skor kunci, dan rubrik.</p>
+  <div class="ftabs" id="ftabs"><span>Bidang:</span></div>
+  <div class="qhead">A · Soal umum <small>dikerjakan semua kandidat</small></div>
+  <div class="qg" id="qUmum"></div>
+  <div class="qhead" style="margin-top:14px">B · Soal bidang <small id="qJobs"></small></div>
+  <div class="qg" id="qBidang"></div>
+  <div class="qfoot"><span>Kunci skor hanya terlihat oleh HRD</span><span>Posisi jawaban terbaik diacak A–D</span><span>Bank soal masih draf, perlu ditinjau HRD dan user</span></div>
+</section>
+
+<!-- 7. DATABASE -->
+<section class="screen" data-tab="Database">
+  <div class="kicker">6 · Desain database</div>
+  <h2>27 tabel dan relasinya</h2>
+  <p class="lead">Setiap warna garis = satu tabel induk. Arahkan kursor ke tabel untuk menyorot relasinya; klik tabel untuk melihat struktur kolomnya.</p>
+  <div class="erd-ctl"><button type="button" class="km-open" id="kmOpen">Kamus data ▸</button>Tampilkan:
+    <button class="fix" type="button">Relasi utama</button>
+    <button type="button" data-cat="ref">+ Referensi (5)</button>
+    <button type="button" data-cat="ptg">+ Petugas (15)</button>
+  </div>
+  <div class="erd" id="erd"><svg id="erdSvg" width="1240" height="440"></svg></div>
+  <div class="erd-db">Database <code>recruitment</code> · PostgreSQL: schema <code>hr</code> · SQL Server: schema <code>dbo</code> · sudah diuji dengan skenario lengkap<br>
+    Setiap tabel juga punya kolom <code>statusaktif</code> (bigint 1/0), <code>info</code>, <code>modifiedby</code>, <code>created_at</code>, <code>updated_at</code></div>
+</section>
+
+<!-- 8. KAMUS DATA -->
+<section class="screen" data-tab="Kamus data">
+  <div class="kicker">6 · Desain database</div>
+  <h2 id="kdTitle">Kamus data: struktur tabel dalam Bahasa Indonesia</h2>
+  <p class="lead">Pilih tabel di kiri untuk melihat arti, tipe data, dan penjelasan setiap kolom. Nama kolom di database tetap aslinya.</p>
+  <div class="kd">
+    <div class="kd-list" id="kmList" aria-label="Daftar tabel"></div>
+    <div class="kd-panel">
+      <div class="km-head"><div class="kicker" id="kmGroup"></div><h3 id="kmTitle"></h3><div class="sub" id="kmSub"></div></div>
+      <div class="km-body" id="kmBody">
+        <table class="km">
+          <thead><tr><th></th><th>Nama kolom · tipe data</th><th>Arti</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+          <tbody id="kmRows"></tbody>
+        </table>
+      </div>
+      <div class="km-foot">Tipe data versi SQL Server (schema <code>dbo</code>); PostgreSQL (schema <code>hr</code>) memakai nama kolom yang sama dengan
+        tipe padanannya: nvarchar → varchar/text, datetime2 → timestamptz, decimal → numeric. Baris abu-abu = kolom standar yang ada di semua tabel.
+        Klik <b>→ nama tabel</b> untuk membuka tabel rujukan · ↑ ↓ pindah tabel.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. ATURAN & STATUS -->
+<section class="screen" data-tab="Aturan">
+  <div class="kicker">5 · Aturan, status &amp; otomatisasi</div>
+  <h2>Yang dijaga otomatis oleh database</h2>
+  <p class="lead">Data yang melanggar aturan ditolak database. Arahkan kursor ke kartu, status, atau view untuk melihat detail dan tabel yang digabung.</p>
+  <div class="rs">
+    <div><div class="colh">Aturan</div><div class="rules" id="rules"></div></div>
+    <div><div class="colh">Status</div><div id="statuses"></div></div>
+    <div><div class="colh">Otomatisasi &amp; 14 view laporan</div><div id="autos"></div><div id="views"></div></div>
+  </div>
+</section>
+
+<!-- 9. ESTIMASI WAKTU -->
+<section class="screen" data-tab="Waktu">
+  <div class="kicker">7 · Estimasi waktu</div>
+  <h2>± 41 hari sampai mulai kerja, ± 4,5 bulan sampai karyawan tetap</h2>
+  <p class="lead">Jika semua tahap berjalan berurutan sesuai target. Arahkan kursor ke batang untuk melihat rinciannya.</p>
+  <div class="gantt" id="gantt"></div>
+</section>
+
+<!-- 10. DISKUSI -->
+<section class="screen" data-tab="Diskusi">
+  <div class="kicker">8 · Poin diskusi</div>
+  <h2>Yang perlu disepakati bersama</h2>
+  <p class="lead">Arahkan kursor ke poin untuk melihat kondisi saat ini di rancangan.</p>
+  <div class="dk">
+    <div class="dq" id="dq"></div>
+    <div>
+      <div class="next"><h3>Langkah berikutnya</h3><ol id="nextList"></ol></div>
+      <div class="thanks"><b>Terima kasih</b>Sesi tanya jawab dan diskusi</div>
+    </div>
+  </div>
+</section>
+
+<nav id="nav">
+  <span class="brand">Alur Rekrutmen Karyawan</span>
+  <div id="tabs"></div>
+  <div class="pager"><button type="button" id="prev" aria-label="Layar sebelumnya">‹</button><span id="pageNo"></span>
+    <button type="button" id="next" aria-label="Layar berikutnya">›</button></div>
+</nav>
+<div id="pop" role="tooltip"></div>
+</div>
+<div id="rotate" hidden>Putar ponsel ke posisi mendatar agar teks lebih besar · ketuk kartu untuk melihat detail</div>
+
+<script>
+// =============================================================================
+// DATA
+// =============================================================================
+const PHASES = [
+  { key: 'PERSIAPAN', name: 'Persiapan', range: 'Tahap 1',     cls: 'g' },
+  { key: 'SOURCING',  name: 'Sourcing',  range: 'Tahap 2–3',   cls: 'p' },
+  { key: 'SELEKSI',   name: 'Seleksi',   range: 'Tahap 4–8',   cls: 'p' },
+  { key: 'PRA_KERJA', name: 'Pra-kerja', range: 'Tahap 9',     cls: 't' },
+  { key: 'KARYAWAN',  name: 'Karyawan',  range: 'Tahap 10–12', cls: 't' },
+];
+
+const STAGES = [
+  { n: 1, ph: 'PERSIAPAN', name: 'Permintaan tenaga kerja (FPTK)', sla: '3 hari',
+    act: 'Departemen mengajukan posisi, jumlah orang, kualifikasi, dan budget gaji. Disetujui berjenjang: kepala departemen, HRD, direksi.',
+    pic: 'Kepala Dept, HRD, Direksi', out: 'FPTK yang disetujui', tb: ['manpower_requisition', 'requisition_approval'] },
+  { n: 2, ph: 'SOURCING', name: 'Publikasi lowongan', sla: '14 hari',
+    act: 'Iklan disusun dari FPTK lalu dipasang di website, job portal, media sosial, kampus, referral karyawan, atau Disnaker. Biaya per media tercatat.',
+    pic: 'HRD (Recruiter)', out: 'Lowongan aktif', tb: ['job_vacancy', 'job_vacancy_channel'] },
+  { n: 3, ph: 'SOURCING', name: 'Penerimaan lamaran', sla: 'bersamaan tahap 2', go: 3,
+    act: 'Pelamar mengisi form lamaran online 6 langkah dan cukup mengunggah CV. Data disimpan sebagai kandidat dan lamarannya dicatat.',
+    pic: 'Pelamar, HRD', out: 'Database pelamar', tb: ['candidate', 'candidate_experience', 'candidate_document', 'application'] },
+  { n: 4, ph: 'SELEKSI', name: 'Seleksi administrasi & kuesioner', sla: '5 hari', go: 5,
+    act: 'Cek CV terhadap syarat minimum. Yang lolos mengisi kuesioner kerja sesuai bidang (2 × 24 jam). AI merangkum jawaban, HRD memutuskan.',
+    pic: 'HRD (Recruiter), Kandidat', out: 'Shortlist & hasil kuesioner',
+    tb: ['application_stage_log', 'screening_response', 'screening_answer', 'screening_ai_review'] },
+  { n: 5, ph: 'SELEKSI', name: 'Wawancara HRD', sla: '3 hari',
+    act: 'Menggali motivasi, sikap, kecocokan budaya, riwayat kerja, dan ekspektasi gaji. Bahan tambahan: pertanyaan pendalaman dari analisis kuesioner.',
+    pic: 'HRD', out: 'Form evaluasi wawancara', tb: ['interview', 'interview_panel'] },
+  { n: 6, ph: 'SELEKSI', name: 'Tes DISC', sla: '3 hari', extra: 'disc',
+    act: 'Tes kepribadian DISC, bisa dikerjakan online. Hasilnya dibandingkan dengan profil ideal posisi (job_position.ideal_disc_profile).',
+    pic: 'HRD', out: 'Profil DISC & kecocokan posisi', tb: ['disc_assessment'] },
+  { n: 7, ph: 'SELEKSI', name: 'Wawancara user', sla: '5 hari',
+    act: 'Calon atasan menilai kompetensi teknis dengan bahan hasil wawancara HRD dan profil DISC. Level manajerial ditambah wawancara direksi.',
+    pic: 'Atasan, Manajer, Direksi', out: 'Rekomendasi hire / no hire', tb: ['interview', 'interview_panel'] },
+  { n: 8, ph: 'SELEKSI', name: 'Cek referensi', sla: '3 hari', opt: true,
+    act: 'Konfirmasi ke perusahaan sebelumnya; verifikasi ijazah dan SKCK bila perlu. Boleh dilewati sesuai posisi (dicatat SKIPPED).',
+    pic: 'HRD', out: 'Laporan referensi', tb: ['reference_check'] },
+  { n: 9, ph: 'PRA_KERJA', name: 'Pemberkasan & kontrak kerja', sla: '5 hari',
+    act: 'HRD menyampaikan gaji, tunjangan, dan tanggal mulai. Kandidat menyerahkan KTP, KK, NPWP, ijazah, rekening, kartu BPJS, SKCK. Dibuatkan NIK karyawan, lalu tanda tangan PKWT/PKWTT.',
+    pic: 'HRD, Direksi, Karyawan baru', out: 'Kontrak kerja & NIK karyawan', tb: ['candidate_document', 'employee', 'employment_contract'] },
+  { n: 10, ph: 'KARYAWAN', name: 'Onboarding & orientasi', sla: '14 hari', extra: 'onb',
+    act: 'Orientasi perusahaan, peraturan perusahaan, K3, pendaftaran BPJS, ID card, akun dan perangkat kerja. Karyawan PKWT selesai di sini dengan status CONTRACT.',
+    pic: 'HRD, IT, GA, Atasan', out: 'Checklist onboarding selesai', tb: ['onboarding_task_template', 'onboarding_task'] },
+  { n: 11, ph: 'KARYAWAN', name: 'Masa percobaan', note: 'khusus PKWTT', sla: '90 hari',
+    act: 'Paling lama 3 bulan (UU 13/2003 Ps. 60). Atasan menilai kinerja, disiplin, dan sikap setiap bulan. PKWT tidak boleh ada masa percobaan (Ps. 58).',
+    pic: 'Atasan, HRD', out: 'Form penilaian bulanan', tb: ['probation_review'] },
+  { n: 12, ph: 'KARYAWAN', name: 'Pengangkatan karyawan tetap', sla: '3 hari',
+    act: 'Jika lulus masa percobaan, terbit SK pengangkatan. Status karyawan berubah menjadi PERMANENT dan tanggal pengangkatan terisi otomatis.',
+    pic: 'HRD, Direksi', out: 'SK karyawan tetap', tb: ['employee_status_history'] },
+];
+
+const ONBOARDING = [
+  ['H-2', 'Meja kerja, ID card & seragam', 'GA'], ['H-2', 'Email, akun sistem & absensi', 'IT'], ['H-1', 'Laptop / perangkat kerja', 'IT'],
+  ['Hari H', 'Orientasi & peraturan perusahaan', 'HRD'], ['Hari H', 'Safety induction (K3)', 'HSE'], ['Hari H', 'Perkenalan tim & buddy', 'Atasan'],
+  ['H+7', 'Pendaftaran BPJS Ketenagakerjaan', 'HRD'], ['H+7', 'Pendaftaran BPJS Kesehatan', 'HRD'], ['H+7', 'Data payroll (rekening, NPWP, PTKP)', 'HRD'],
+  ['H+14', 'Pelatihan job description & SOP', 'Atasan'], ['H+14', 'Target kerja masa percobaan', 'Atasan'],
+];
+
+const FORM_STEPS = [
+  { n: 1, name: 'Data diri', sum: 'Identitas dan kontak pelamar.', tb: ['candidate'],
+    fields: ['Nama lengkap *', 'Email *', 'No. HP / WhatsApp *', 'NIK KTP (16 digit, opsional)', 'Tempat & tanggal lahir', 'Jenis kelamin, status', 'Kota domisili *'],
+    rule: 'Email dan NIK tidak boleh dobel; NIK tepat 16 digit angka.' },
+  { n: 2, name: 'Pendidikan terakhir', sum: 'Jenjang, jurusan, institusi, IPK.', tb: ['candidate'],
+    fields: ['Jenjang * (SD, SMP, SMA/SMK, D1–D4, S1–S3)', 'Jurusan', 'Nama institusi', 'IPK / nilai akhir'],
+    rule: 'Ijazah dan transkrip baru diminta saat pemberkasan (tahap 9).' },
+  { n: 3, name: 'Pengalaman kerja', sum: 'Boleh lebih dari satu; ada opsi fresh graduate.', tb: ['candidate_experience'],
+    fields: ['Nama perusahaan', 'Jabatan', 'Mulai & selesai (atau masih bekerja)', 'Gaji terakhir', 'Alasan pindah'],
+    rule: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' },
+  { n: 4, name: 'Keahlian & dokumen', sum: 'Cukup CV; berkas lain opsional.', tb: ['candidate', 'candidate_document'],
+    fields: ['Keahlian (tag)', 'CV / resume * (PDF/DOCX, maks. 2 MB)', 'Surat lamaran (opsional)', 'Sertifikat / portofolio (opsional)', 'Profil LinkedIn (opsional)'],
+    rule: 'CV wajib. KTP, KK, dan NPWP baru diminta di tahap 9.' },
+  { n: 5, name: 'Pertanyaan lamaran', sum: 'Gaji, tanggal mulai, sumber info.', tb: ['application', 'candidate'],
+    fields: ['Ekspektasi gaji *', 'Tanggal paling cepat mulai kerja *', 'Total pengalaman kerja *', 'Sumber info lowongan *', 'Kode referral karyawan'],
+    rule: 'Satu pelamar hanya bisa melamar sekali per lowongan. Pertanyaan bisa ditambah per posisi, misalnya kepemilikan SIM untuk pengemudi.' },
+  { n: 6, name: 'Tinjau & kirim', sum: 'Ringkasan dan persetujuan UU PDP.', tb: ['candidate', 'application'],
+    fields: ['Ringkasan isian', 'Pernyataan data benar *', 'Persetujuan pengolahan data pribadi (UU 27/2022) *'],
+    rule: 'Waktu persetujuan disimpan di candidate.privacy_consent_at. Nomor lamaran dibuat otomatis dengan status IN_PROGRESS.' },
+];
+
+const DIMS = {
+  INTEGRITAS:        { label: 'Integritas',              desc: 'Jujur, menolak penyimpangan, mengakui kesalahan.' },
+  TANGGUNG_JAWAB:    { label: 'Tanggung jawab',          desc: 'Menuntaskan tugas dan menepati komitmen.' },
+  KERJA_SAMA:        { label: 'Kerja sama & komunikasi', desc: 'Berkoordinasi dan menyampaikan masalah dengan baik.' },
+  PEMECAHAN_MASALAH: { label: 'Pemecahan masalah',       desc: 'Mencari jalan keluar dan berinisiatif.' },
+  KETAHANAN:         { label: 'Ketahanan kerja',         desc: 'Tetap stabil di bawah tekanan dan target.' },
+  KETELITIAN:        { label: 'Ketelitian',              desc: 'Cermat, rapi, dan patuh prosedur.' },
+};
+
+const FIELDS = [
+  { id: 1, name: 'Operasional & Logistik', jobs: 'admin operasional, staf gudang, checker, koordinator pengiriman' },
+  { id: 2, name: 'Sales & Marketing',      jobs: 'sales, account executive, customer service, staf marketing' },
+  { id: 3, name: 'Keuangan & Akuntansi',   jobs: 'staf finance, akuntansi, pajak, kasir, penagihan' },
+  { id: 4, name: 'Administrasi, HR & GA',  jobs: 'admin kantor, staf HRD, general affairs, purchasing' },
+];
+
+// Judul singkat untuk kartu soal; isi lengkap soal diambil dari seed screening_question
+const SOAL_TITLE = {
+  'UMUM-01': 'Titip absen', 'UMUM-02': 'Tugas mendesak bertumpuk', 'UMUM-03': 'Kesalahan yang pernah dibuat', 'UMUM-04': 'Rekan yang sulit diajak kerja sama',
+  'OPS-01': 'Barang kurang 2 koli', 'OPS-02': 'Armada mogok sore hari', 'OPS-03': 'Uang terima kasih dari vendor',
+  'OPS-04': 'Rekan senior tanpa APD', 'OPS-05': 'Cara kerja yang lebih baik', 'OPS-06': 'Pekerjaan menumpuk di musim ramai',
+  'SLS-01': 'Diskon di luar wewenang', 'SLS-02': 'Tiga minggu tanpa order', 'SLS-03': 'Pelanggan marah karena telat kirim',
+  'SLS-04': 'Pesanan WhatsApp kurang jelas', 'SLS-05': 'Negosiasi tersulit', 'SLS-06': 'Gagal menepati target atau janji',
+  'KEU-01': 'Diminta menggeser biaya', 'KEU-02': 'Selisih rekonsiliasi Rp 75.000', 'KEU-03': 'Pembayaran vendor dobel',
+  'KEU-04': 'Reimbursement tanpa bukti lengkap', 'KEU-05': 'Menelusuri kejanggalan angka', 'KEU-06': 'Tenggat tutup buku',
+  'ADM-01': 'Ditanya gaji karyawan lain', 'ADM-02': 'Karyawan marah soal lembur', 'ADM-03': 'Absensi bentrok dengan cuti',
+  'ADM-04': 'AC rusak, vendor lambat', 'ADM-05': 'Dipercaya memegang aset', 'ADM-06': 'Banyak permintaan sekaligus',
+};
+
+// Disalin otomatis dari seed hr.screening_question (rekrutmen_karyawan.sql)
+const SOAL = /*@@SOAL@@*/[
+  {"code": "UMUM-01", "field": null, "type": "SCENARIO", "dim": "INTEGRITAS", "sort": 1, "min": 50, "q": "Rekan kerja yang akrab dengan Anda minta tolong diisikan absensinya karena ia akan datang terlambat satu jam.", "opts": [{"key": "A", "text": "Mengisikan absensinya, toh hanya sekali ini", "score": 1}, {"key": "B", "text": "Menolak dengan sopan dan menyarankan ia memberi tahu atasan", "score": 4}, {"key": "C", "text": "Menolak tanpa penjelasan dan menjaga jarak setelahnya", "score": 2}, {"key": "D", "text": "Mengisikan absensinya, lalu menegurnya setelah ia datang", "score": 1}], "rubric": "Menolak titip absen tanpa merusak hubungan kerja; alasannya menunjukkan bahwa absensi menyangkut gaji dan kepercayaan."},
+  {"code": "UMUM-02", "field": null, "type": "SCENARIO", "dim": "KETAHANAN", "sort": 2, "min": 50, "q": "Dua jam sebelum tenggat laporan, atasan memberi tugas mendesak yang baru. Keduanya tidak mungkin selesai tepat waktu.", "opts": [{"key": "A", "text": "Mengerjakan tugas baru dan diam-diam menunda laporan", "score": 1}, {"key": "B", "text": "Mengerjakan keduanya semampunya tanpa memberi tahu siapa pun", "score": 2}, {"key": "C", "text": "Menolak tugas baru karena laporan belum selesai", "score": 2}, {"key": "D", "text": "Menyampaikan kondisinya ke atasan, meminta prioritas, lalu mengatur ulang jadwal", "score": 4}], "rubric": "Tetap tenang, terbuka soal kapasitas, dan mengajak atasan menentukan prioritas, bukan memaksakan diri atau menghindar."},
+  {"code": "UMUM-03", "field": null, "type": "OPEN", "dim": "TANGGUNG_JAWAB", "sort": 3, "min": 300, "q": "Ceritakan satu kesalahan yang pernah Anda buat dalam pekerjaan, kuliah, atau organisasi. Apa yang terjadi, apa yang Anda lakukan setelahnya, dan apa yang Anda ubah sejak itu?", "opts": null, "rubric": "Mengakui kesalahan sendiri tanpa menyalahkan orang lain, ada tindakan perbaikan yang nyata, dan ada kebiasaan yang berubah."},
+  {"code": "UMUM-04", "field": null, "type": "OPEN", "dim": "KERJA_SAMA", "sort": 4, "min": 300, "q": "Ceritakan saat Anda harus bekerja sama dengan orang yang sulit diajak bekerja sama atau berbeda pendapat dengan Anda. Apa yang Anda lakukan dan bagaimana hasilnya?", "opts": null, "rubric": "Berusaha memahami sudut pandang orang lain, berbicara langsung dengan sopan, dan tetap fokus pada tujuan bersama."},
+  {"code": "OPS-01", "field": 1, "type": "SCENARIO", "dim": "KETELITIAN", "sort": 5, "min": 50, "q": "Saat menerima barang, jumlah fisik kurang 2 koli dari surat jalan. Sopir terburu-buru dan meminta Anda langsung tanda tangan.", "opts": [{"key": "A", "text": "Tanda tangan dulu, selisihnya dilaporkan belakangan", "score": 1}, {"key": "B", "text": "Menolak seluruh barang sampai kekurangannya dikirim", "score": 2}, {"key": "C", "text": "Mencatat selisih di surat jalan dengan foto dan paraf sopir, lalu melapor ke atasan", "score": 4}, {"key": "D", "text": "Menahan sopir sambil menunggu instruksi atasan", "score": 3}], "rubric": "Mencatat selisih secara tertulis dan berbukti sebelum tanda tangan, tanpa menghambat pekerjaan secara berlebihan."},
+  {"code": "OPS-02", "field": 1, "type": "SCENARIO", "dim": "PEMECAHAN_MASALAH", "sort": 6, "min": 50, "q": "Pukul 16.00 armada untuk pengiriman pelanggan prioritas mogok, padahal barang harus tiba besok pagi.", "opts": [{"key": "A", "text": "Mencari armada pengganti atau vendor, lalu mengabari pelanggan dan atasan", "score": 4}, {"key": "B", "text": "Mengabari pelanggan bahwa pengiriman pasti terlambat", "score": 2}, {"key": "C", "text": "Menunggu armada selesai diperbaiki bengkel", "score": 1}, {"key": "D", "text": "Melapor ke atasan dan menyerahkan keputusan sepenuhnya", "score": 2}], "rubric": "Mencari jalan keluar lebih dulu, lalu mengabari pelanggan dan atasan dengan informasi yang jelas."},
+  {"code": "OPS-03", "field": 1, "type": "SCENARIO", "dim": "INTEGRITAS", "sort": 7, "min": 50, "q": "Vendor ekspedisi langganan menawarkan uang terima kasih untuk Anda pribadi agar perusahaan terus memakai jasanya.", "opts": [{"key": "A", "text": "Menerima, karena tidak mengubah kualitas layanan vendor", "score": 1}, {"key": "B", "text": "Menolak, tetapi tidak perlu melapor", "score": 3}, {"key": "C", "text": "Menerima lalu membagikannya ke seluruh tim", "score": 1}, {"key": "D", "text": "Menolak dan melaporkan tawaran itu ke atasan", "score": 4}], "rubric": "Menolak gratifikasi dan paham bahwa tawaran seperti ini perlu dilaporkan."},
+  {"code": "OPS-04", "field": 1, "type": "SCENARIO", "dim": "TANGGUNG_JAWAB", "sort": 8, "min": 50, "q": "Anda melihat rekan senior mengoperasikan forklift tanpa helm dan rompi keselamatan, katanya hanya sebentar.", "opts": [{"key": "A", "text": "Membiarkan, karena ia lebih senior dan berpengalaman", "score": 1}, {"key": "B", "text": "Mengingatkan dengan sopan; bila diulang, melapor ke supervisor", "score": 4}, {"key": "C", "text": "Langsung melapor ke supervisor tanpa bicara dengannya", "score": 3}, {"key": "D", "text": "Ikut membantu supaya pekerjaannya cepat selesai", "score": 1}], "rubric": "Peduli keselamatan kerja dan berani mengingatkan dengan cara yang tetap menghormati rekan."},
+  {"code": "OPS-05", "field": 1, "type": "OPEN", "dim": "PEMECAHAN_MASALAH", "sort": 9, "min": 300, "q": "Ceritakan pengalaman Anda menemukan cara kerja yang lebih cepat, lebih rapi, atau lebih sedikit kesalahan. Apa masalahnya, apa yang Anda ubah, dan apa hasilnya?", "opts": null, "rubric": "Masalahnya konkret, perubahan datang dari inisiatif sendiri, dan hasilnya terukur (waktu, jumlah kesalahan, atau biaya)."},
+  {"code": "OPS-06", "field": 1, "type": "OPEN", "dim": "KETAHANAN", "sort": 10, "min": 300, "q": "Ceritakan saat Anda harus menyelesaikan banyak pekerjaan dalam waktu singkat, misalnya akhir bulan atau musim ramai. Bagaimana Anda mengatur prioritas dan menjaga hasilnya tetap benar?", "opts": null, "rubric": "Cara mengatur prioritas jelas, ketelitian tetap terjaga, dan mau meminta bantuan bila perlu."},
+  {"code": "SLS-01", "field": 2, "type": "SCENARIO", "dim": "INTEGRITAS", "sort": 5, "min": 50, "q": "Target bulan ini kurang sedikit. Seorang calon pelanggan mau order jika Anda menjanjikan diskon di luar kewenangan Anda.", "opts": [{"key": "A", "text": "Menjanjikan diskon dulu, persetujuannya diurus belakangan", "score": 1}, {"key": "B", "text": "Menolak permintaan diskon dan melepas pelanggan", "score": 2}, {"key": "C", "text": "Menjelaskan batas wewenang, mengajukan ke atasan, dan memberi kepastian secepatnya", "score": 4}, {"key": "D", "text": "Memberi potongan dari komisi sendiri tanpa sepengetahuan kantor", "score": 1}], "rubric": "Tidak menjanjikan hal di luar wewenang walau dikejar target, tetapi tetap berusaha mempertahankan pelanggan lewat jalur resmi."},
+  {"code": "SLS-02", "field": 2, "type": "SCENARIO", "dim": "KETAHANAN", "sort": 6, "min": 50, "q": "Sudah tiga minggu, dari 20 calon pelanggan yang Anda hubungi belum ada satu pun yang order.", "opts": [{"key": "A", "text": "Mengevaluasi prospek dan cara menawarkan, meminta masukan senior, mencoba cara baru", "score": 4}, {"key": "B", "text": "Terus menghubungi dengan cara yang sama, hasil pasti datang", "score": 2}, {"key": "C", "text": "Menunggu prospek dari tim marketing", "score": 1}, {"key": "D", "text": "Mulai merasa pekerjaan sales tidak cocok untuk Anda", "score": 1}], "rubric": "Tidak mudah patah semangat saat ditolak, mau mengevaluasi diri, dan mencoba pendekatan lain."},
+  {"code": "SLS-03", "field": 2, "type": "SCENARIO", "dim": "KERJA_SAMA", "sort": 7, "min": 50, "q": "Pelanggan marah di telepon karena kiriman terlambat. Penyebabnya ada di bagian operasional, bukan di Anda.", "opts": [{"key": "A", "text": "Menjelaskan bahwa keterlambatan itu kesalahan bagian operasional", "score": 1}, {"key": "B", "text": "Langsung memberi diskon agar pelanggan tenang", "score": 2}, {"key": "C", "text": "Meminta pelanggan menghubungi customer service", "score": 1}, {"key": "D", "text": "Mendengarkan, meminta maaf, mengecek ke operasional, lalu memberi kabar pasti", "score": 4}], "rubric": "Menenangkan pelanggan tanpa melempar kesalahan, berkoordinasi dengan bagian lain, dan menindaklanjuti sampai tuntas."},
+  {"code": "SLS-04", "field": 2, "type": "SCENARIO", "dim": "KETELITIAN", "sort": 8, "min": 50, "q": "Pelanggan memesan lewat WhatsApp dalam jumlah besar, tetapi jumlah dan alamat kirimnya kurang jelas. Ia minta segera diproses.", "opts": [{"key": "A", "text": "Langsung memproses sesuai perkiraan Anda agar cepat", "score": 1}, {"key": "B", "text": "Mengonfirmasi ulang rincian pesanan secara tertulis, baru memprosesnya", "score": 4}, {"key": "C", "text": "Menunggu pelanggan menghubungi lagi dengan rincian lengkap", "score": 1}, {"key": "D", "text": "Memproses sesuai perkiraan, lalu meminta admin mengecek", "score": 2}], "rubric": "Memastikan pesanan benar sebelum diproses, dengan cara yang tetap cepat dan tertulis."},
+  {"code": "SLS-05", "field": 2, "type": "OPEN", "dim": "PEMECAHAN_MASALAH", "sort": 9, "min": 300, "q": "Ceritakan penjualan atau negosiasi tersulit yang pernah Anda hadapi (boleh dari pengalaman usaha atau organisasi). Apa strategi Anda dan bagaimana hasilnya?", "opts": null, "rubric": "Memahami kebutuhan pelanggan, strateginya jelas dan masuk akal, serta jujur menceritakan hasilnya, termasuk bila gagal."},
+  {"code": "SLS-06", "field": 2, "type": "OPEN", "dim": "TANGGUNG_JAWAB", "sort": 10, "min": 300, "q": "Ceritakan saat Anda gagal mencapai target atau tidak bisa menepati janji kepada pelanggan. Apa yang Anda lakukan setelahnya?", "opts": null, "rubric": "Mengakui tanggung jawab sendiri, tidak menyalahkan pihak lain, dan ada langkah perbaikan."},
+  {"code": "KEU-01", "field": 3, "type": "SCENARIO", "dim": "INTEGRITAS", "sort": 5, "min": 50, "q": "Atasan meminta Anda mencatat sebagian biaya bulan ini ke bulan depan agar laporan bulan ini terlihat lebih baik.", "opts": [{"key": "A", "text": "Menjelaskan bahwa biaya harus dicatat di periodenya dan menawarkan catatan penjelas", "score": 4}, {"key": "B", "text": "Mengikuti, karena itu perintah atasan", "score": 1}, {"key": "C", "text": "Mengikuti, sambil menyimpan bukti percakapan untuk berjaga-jaga", "score": 1}, {"key": "D", "text": "Menolak lalu langsung melapor ke direksi", "score": 2}], "rubric": "Memegang prinsip pencatatan yang benar, mampu menolak dengan sopan, dan memberi jalan keluar."},
+  {"code": "KEU-02", "field": 3, "type": "SCENARIO", "dim": "KETELITIAN", "sort": 6, "min": 50, "q": "Saat rekonsiliasi bank akhir bulan ada selisih Rp 75.000 yang belum ketemu, padahal laporan harus diserahkan satu jam lagi.", "opts": [{"key": "A", "text": "Memasukkan selisih ke akun lain-lain agar laporan seimbang", "score": 1}, {"key": "B", "text": "Menunda penyerahan sampai selisihnya ketemu", "score": 2}, {"key": "C", "text": "Menyerahkan tepat waktu dengan catatan selisih masih ditelusuri, lalu menuntaskannya", "score": 4}, {"key": "D", "text": "Meminta tambahan waktu tanpa menjelaskan alasannya", "score": 1}], "rubric": "Tidak menutupi selisih sekecil apa pun, terbuka soal kondisi laporan, dan menuntaskan penelusuran."},
+  {"code": "KEU-03", "field": 3, "type": "SCENARIO", "dim": "TANGGUNG_JAWAB", "sort": 7, "min": 50, "q": "Anda menyadari pembayaran ke vendor yang Anda proses minggu lalu ternyata dobel.", "opts": [{"key": "A", "text": "Diam saja dan berharap vendor mengembalikannya sendiri", "score": 1}, {"key": "B", "text": "Menghubungi vendor sendiri tanpa memberi tahu atasan", "score": 2}, {"key": "C", "text": "Menjelaskan bahwa approver juga lalai memeriksa", "score": 1}, {"key": "D", "text": "Melapor ke atasan, menagih pengembalian ke vendor, dan memperbaiki cara cek", "score": 4}], "rubric": "Segera mengakui dan melaporkan kesalahan sendiri, memulihkan kerugian, dan mencegahnya terulang."},
+  {"code": "KEU-04", "field": 3, "type": "SCENARIO", "dim": "KERJA_SAMA", "sort": 8, "min": 50, "q": "Bagian sales berulang kali mengajukan reimbursement dengan bukti tidak lengkap dan meminta dicairkan cepat.", "opts": [{"key": "A", "text": "Tetap mencairkan supaya tidak terjadi keributan", "score": 1}, {"key": "B", "text": "Mengembalikan dengan daftar kekurangan yang jelas dan membagikan checklist bukti", "score": 4}, {"key": "C", "text": "Menolak tanpa penjelasan", "score": 2}, {"key": "D", "text": "Melaporkannya ke atasan sales setiap kali terjadi", "score": 3}], "rubric": "Tegas menjaga aturan, tetapi membantu pihak lain memahami dan memenuhinya."},
+  {"code": "KEU-05", "field": 3, "type": "OPEN", "dim": "PEMECAHAN_MASALAH", "sort": 9, "min": 300, "q": "Ceritakan saat Anda menemukan selisih atau kejanggalan angka. Bagaimana Anda menelusurinya sampai menemukan penyebabnya?", "opts": null, "rubric": "Langkah penelusuran runtut dan logis, sabar memeriksa detail, dan ada tindak lanjut agar tidak terulang."},
+  {"code": "KEU-06", "field": 3, "type": "OPEN", "dim": "KETAHANAN", "sort": 10, "min": 300, "q": "Ceritakan saat Anda menghadapi tenggat yang sangat ketat, misalnya tutup buku atau lapor pajak. Bagaimana Anda menyelesaikannya tanpa mengorbankan ketelitian?", "opts": null, "rubric": "Tetap tenang dan terencana di bawah tekanan, tidak mengambil jalan pintas yang mengorbankan akurasi."},
+  {"code": "ADM-01", "field": 4, "type": "SCENARIO", "dim": "INTEGRITAS", "sort": 5, "min": 50, "q": "Teman satu kantor meminta Anda memberi tahu gaji seorang karyawan lain. Data itu Anda pegang karena pekerjaan Anda.", "opts": [{"key": "A", "text": "Menolak dengan sopan dan menjelaskan bahwa data karyawan bersifat rahasia", "score": 4}, {"key": "B", "text": "Memberi tahu, karena yang bertanya teman sendiri", "score": 1}, {"key": "C", "text": "Memberi gambaran kisarannya saja", "score": 1}, {"key": "D", "text": "Menyuruhnya bertanya langsung ke atasan", "score": 2}], "rubric": "Menjaga kerahasiaan data karyawan tanpa pengecualian dan menolak dengan cara yang baik."},
+  {"code": "ADM-02", "field": 4, "type": "SCENARIO", "dim": "KERJA_SAMA", "sort": 6, "min": 50, "q": "Seorang karyawan datang marah karena uang lemburnya belum dibayar. Ternyata formulirnya belum disetujui atasannya.", "opts": [{"key": "A", "text": "Menegaskan bahwa ini bukan kesalahan HR", "score": 1}, {"key": "B", "text": "Meminta karyawan itu mengurus sendiri ke atasannya", "score": 2}, {"key": "C", "text": "Mendengarkan, mengecek posisi berkas, lalu membantu menindaklanjuti ke atasannya", "score": 4}, {"key": "D", "text": "Menjanjikan lemburnya pasti dibayar besok agar ia tenang", "score": 1}], "rubric": "Melayani dengan empati, mencari fakta, dan membantu menyelesaikan masalah lintas bagian."},
+  {"code": "ADM-03", "field": 4, "type": "SCENARIO", "dim": "KETELITIAN", "sort": 7, "min": 50, "q": "Saat merekap absensi untuk payroll, 3 karyawan tercatat hadir di mesin absensi padahal cutinya sudah disetujui.", "opts": [{"key": "A", "text": "Mengikuti data mesin absensi karena itu sistem resmi", "score": 1}, {"key": "B", "text": "Langsung mengoreksi sesuai formulir cuti tanpa konfirmasi", "score": 2}, {"key": "C", "text": "Mengirim rekap apa adanya dan mencatatnya untuk bulan depan", "score": 1}, {"key": "D", "text": "Mencocokkan dengan formulir cuti dan mengonfirmasi ke atasannya sebelum mengirim", "score": 4}], "rubric": "Tidak menelan data mentah-mentah, memeriksa silang sumber data, dan memastikan sebelum mengirim."},
+  {"code": "ADM-04", "field": 4, "type": "SCENARIO", "dim": "PEMECAHAN_MASALAH", "sort": 8, "min": 50, "q": "AC ruang kerja rusak. Sudah tiga kali dilaporkan ke vendor, teknisinya belum datang, dan karyawan mulai mengeluh.", "opts": [{"key": "A", "text": "Menunggu teknisi vendor datang sesuai antrean", "score": 1}, {"key": "B", "text": "Menagih vendor dengan tenggat jelas, menyiapkan solusi sementara, mengabari karyawan", "score": 4}, {"key": "C", "text": "Meneruskan keluhan ke atasan dan menunggu arahan", "score": 2}, {"key": "D", "text": "Langsung mengganti vendor tanpa melihat kontraknya", "score": 2}], "rubric": "Bertindak cepat dengan solusi sementara, menagih pihak terkait dengan tegas, dan menjaga komunikasi."},
+  {"code": "ADM-05", "field": 4, "type": "OPEN", "dim": "TANGGUNG_JAWAB", "sort": 9, "min": 300, "q": "Ceritakan saat Anda dipercaya memegang dokumen penting, uang, atau aset milik kantor atau organisasi. Bagaimana Anda menjaganya?", "opts": null, "rubric": "Ada cara pencatatan dan pengamanan yang nyata, sadar risiko, dan bisa dipertanggungjawabkan."},
+  {"code": "ADM-06", "field": 4, "type": "OPEN", "dim": "KETAHANAN", "sort": 10, "min": 300, "q": "Ceritakan saat Anda harus melayani banyak permintaan dari berbagai pihak sekaligus dan ada yang tidak puas dengan Anda. Bagaimana Anda menanganinya?", "opts": null, "rubric": "Tetap sabar dan profesional, bisa mengatur prioritas, dan menerima keluhan tanpa defensif."}
+];
+
+// Kamus kolom: disusun otomatis dari script SQL Server + arti/penjelasan Bahasa Indonesia
+// l = nama tabel (Indonesia); c = kolom: n nama, t tipe, w wajib, a arti, k keterangan,
+// r tabel rujukan, d default, v nilai yang diizinkan, x aturan, pk kunci utama, auto otomatis, u unik
+const KAMUS = /*@@KAMUS@@*/{
+  "department": {"l": "Departemen", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "code", "t": "varchar(20)", "w": 1, "a": "Kode departemen", "k": "Singkatan departemen, mis. OPS atau HRD. Tidak boleh sama.", "u": 1}, {"n": "name", "t": "nvarchar(100)", "w": 1, "a": "Nama departemen", "k": "Nama lengkap departemen atau divisi."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "job_field": {"l": "Bidang pekerjaan", "c": [{"n": "id", "t": "smallint", "w": 1, "a": "ID bidang", "k": "Diisi tetap lewat data awal: 1 Operasional & Logistik, 2 Sales & Marketing, 3 Keuangan & Akuntansi, 4 Administrasi, HR & GA.", "pk": 1}, {"n": "code", "t": "varchar(20)", "w": 1, "a": "Kode bidang", "k": "OPERASIONAL, SALES, KEUANGAN, atau ADMIN_HR.", "u": 1}, {"n": "name", "t": "nvarchar(100)", "w": 1, "a": "Nama bidang", "k": "Nama bidang yang tampil, mis. Operasional & Logistik."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "job_position": {"l": "Jabatan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "department_id", "t": "bigint", "w": 1, "a": "Departemen", "k": "Departemen tempat jabatan ini berada.", "r": "department"}, {"n": "code", "t": "varchar(20)", "w": 1, "a": "Kode jabatan", "k": "Kode unik jabatan, mis. ADM-OPS.", "u": 1}, {"n": "name", "t": "nvarchar(100)", "w": 1, "a": "Nama jabatan", "k": "Mis. Admin Operasional, Manajer Operasional."}, {"n": "job_level", "t": "varchar(30)", "w": 1, "a": "Level jabatan", "k": "Tingkatan jabatan: Staff, Supervisor, Manager, Direksi, dst."}, {"n": "ideal_disc_profile", "t": "varchar(10)", "w": 0, "a": "Profil DISC ideal", "k": "Pola DISC yang dicari untuk jabatan ini, mis. DI atau SC. Acuan saat membaca hasil tes DISC (tahap 6)."}, {"n": "job_field_id", "t": "smallint", "w": 0, "a": "Bidang soal kuesioner", "k": "Menentukan 6 soal bidang yang dikirim di tahap 4. Kosong = kandidat hanya mengerjakan 4 soal umum.", "r": "job_field"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "employee": {"l": "Karyawan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "employee_no", "t": "varchar(30)", "w": 1, "a": "NIK karyawan", "k": "Nomor induk karyawan / NIP. Tidak boleh sama.", "u": 1}, {"n": "full_name", "t": "nvarchar(150)", "w": 1, "a": "Nama lengkap", "k": "Nama lengkap karyawan."}, {"n": "department_id", "t": "bigint", "w": 1, "a": "Departemen", "k": "Departemen tempat karyawan bekerja.", "r": "department"}, {"n": "position_id", "t": "bigint", "w": 1, "a": "Jabatan", "k": "Jabatan karyawan saat ini.", "r": "job_position"}, {"n": "supervisor_id", "t": "bigint", "w": 0, "a": "Atasan langsung", "k": "Merujuk ke karyawan lain di tabel ini. Kosong untuk pimpinan tertinggi.", "r": "employee"}, {"n": "candidate_id", "t": "bigint", "w": 0, "a": "Asal kandidat", "k": "Data pelamar asal, untuk karyawan hasil rekrutmen. Kosong untuk karyawan lama. Satu kandidat hanya bisa menjadi satu karyawan.", "r": "candidate"}, {"n": "application_id", "t": "bigint", "w": 0, "a": "Asal lamaran", "k": "Lamaran yang membuat orang ini diterima. Kosong untuk karyawan lama.", "r": "application"}, {"n": "employment_type", "t": "varchar(10)", "w": 1, "a": "Jenis hubungan kerja", "k": "PKWT = kontrak waktu tertentu, PKWTT = karyawan tetap.", "v": "PKWT, PKWTT"}, {"n": "status", "t": "varchar(20)", "w": 1, "a": "Status karyawan", "k": "PROBATION masa percobaan, CONTRACT kontrak, PERMANENT tetap, RESIGNED mengundurkan diri, TERMINATED diberhentikan. Diubah lewat riwayat status (trigger), bukan diedit langsung. PKWT tidak boleh PROBATION atau PERMANENT.", "v": "PROBATION, CONTRACT, PERMANENT, RESIGNED, TERMINATED"}, {"n": "join_date", "t": "date", "w": 1, "a": "Tanggal masuk", "k": "Hari pertama bekerja."}, {"n": "permanent_date", "t": "date", "w": 0, "a": "Tanggal diangkat tetap", "k": "Terisi otomatis saat SK pengangkatan dicatat di riwayat status."}, {"n": "work_email", "t": "varchar(150)", "w": 0, "a": "Email kantor", "k": "Boleh kosong. Bila diisi tidak boleh sama dengan karyawan lain."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "recruitment_stage": {"l": "Tahap rekrutmen", "c": [{"n": "id", "t": "smallint", "w": 1, "a": "ID tahap", "k": "Diisi tetap lewat data awal, 1 sampai 12, sama dengan nomor tahap.", "pk": 1}, {"n": "stage_order", "t": "smallint", "w": 1, "a": "Urutan tahap", "k": "Urutan 1–12. Tahap terkini lamaran = tahap dengan urutan tertinggi yang sudah tercatat.", "u": 1}, {"n": "code", "t": "varchar(30)", "w": 1, "a": "Kode tahap", "k": "Mis. REQUISITION, ADMIN_SCREENING, DISC_TEST.", "u": 1}, {"n": "phase", "t": "varchar(20)", "w": 1, "a": "Fase", "k": "PERSIAPAN, SOURCING, SELEKSI, PRA_KERJA, atau KARYAWAN.", "v": "PERSIAPAN, SOURCING, SELEKSI, PRA_KERJA, KARYAWAN"}, {"n": "name", "t": "nvarchar(100)", "w": 1, "a": "Nama tahap", "k": "Mis. Wawancara HRD."}, {"n": "description", "t": "nvarchar(500)", "w": 1, "a": "Uraian kegiatan", "k": "Penjelasan apa yang dikerjakan di tahap ini."}, {"n": "pic", "t": "nvarchar(150)", "w": 1, "a": "Penanggung jawab", "k": "Bagian atau jabatan yang menjalankan tahap ini."}, {"n": "output_doc", "t": "nvarchar(150)", "w": 0, "a": "Hasil / dokumen keluaran", "k": "Mis. FPTK yang disetujui, SK karyawan tetap."}, {"n": "sla_days", "t": "smallint", "w": 0, "a": "Target hari", "k": "Target lama tahap (hari kalender). Dipakai v_stage_history untuk menandai tahap yang melewati target."}, {"n": "is_mandatory", "t": "bigint", "w": 1, "a": "Tahap wajib?", "k": "1 = wajib, 0 = opsional (tahap 8 cek referensi, 11 masa percobaan, 12 pengangkatan).", "d": "1"}, {"n": "detail_table", "t": "varchar(150)", "w": 0, "a": "Tabel pencatat", "k": "Nama tabel yang menyimpan detail tahap ini."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "manpower_requisition": {"l": "Permintaan tenaga kerja (FPTK)", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "requisition_no", "t": "varchar(30)", "w": 1, "a": "Nomor FPTK", "k": "Nomor Form Permintaan Tenaga Kerja. Tidak boleh sama.", "u": 1}, {"n": "department_id", "t": "bigint", "w": 1, "a": "Departemen peminta", "k": "Departemen yang membutuhkan karyawan.", "r": "department"}, {"n": "position_id", "t": "bigint", "w": 1, "a": "Jabatan yang dibutuhkan", "k": "Jabatan yang akan diisi.", "r": "job_position"}, {"n": "headcount", "t": "smallint", "w": 1, "a": "Jumlah orang", "k": "Jumlah karyawan yang dibutuhkan, minimal 1.", "x": "harus lebih dari 0"}, {"n": "reason", "t": "varchar(20)", "w": 1, "a": "Alasan permintaan", "k": "REPLACEMENT pengganti karyawan keluar, NEW_POSITION posisi baru, ADDITIONAL tambahan orang.", "v": "REPLACEMENT, NEW_POSITION, ADDITIONAL"}, {"n": "replaced_employee_id", "t": "bigint", "w": 0, "a": "Karyawan yang digantikan", "k": "Wajib diisi bila alasan REPLACEMENT.", "r": "employee"}, {"n": "employment_type", "t": "varchar(10)", "w": 1, "a": "Jenis hubungan kerja", "k": "Rencana status karyawan baru: PKWT (kontrak) atau PKWTT (tetap).", "v": "PKWT, PKWTT"}, {"n": "contract_months", "t": "smallint", "w": 0, "a": "Lama kontrak (bulan)", "k": "Wajib diisi bila PKWT."}, {"n": "min_education", "t": "varchar(10)", "w": 0, "a": "Pendidikan minimal", "k": "Mis. SMA/SMK, D3, S1."}, {"n": "min_experience_years", "t": "smallint", "w": 1, "a": "Pengalaman minimal (tahun)", "k": "0 berarti fresh graduate boleh melamar.", "d": "0"}, {"n": "requirements", "t": "nvarchar(max)", "w": 0, "a": "Kualifikasi lain", "k": "Syarat tambahan, mis. punya SIM B1, bisa Excel."}, {"n": "salary_min", "t": "decimal(15,2)", "w": 0, "a": "Budget gaji minimum", "k": "Batas bawah gaji yang disiapkan."}, {"n": "salary_max", "t": "decimal(15,2)", "w": 0, "a": "Budget gaji maksimum", "k": "Tidak boleh lebih kecil dari budget minimum."}, {"n": "needed_by_date", "t": "date", "w": 0, "a": "Dibutuhkan paling lambat", "k": "Target tanggal karyawan baru mulai bekerja."}, {"n": "requested_by", "t": "bigint", "w": 1, "a": "Diajukan oleh", "k": "Karyawan pengaju FPTK, biasanya kepala departemen.", "r": "employee"}, {"n": "requested_at", "t": "datetime2(0)", "w": 1, "a": "Waktu pengajuan", "k": "Terisi otomatis saat FPTK dibuat.", "d": "waktu saat ini"}, {"n": "status", "t": "varchar(20)", "w": 1, "a": "Status FPTK", "k": "DRAFT, SUBMITTED diajukan, APPROVED disetujui, REJECTED ditolak, FULFILLED sudah terpenuhi, CANCELLED dibatalkan.", "d": "DRAFT", "v": "DRAFT, SUBMITTED, APPROVED, REJECTED, FULFILLED, CANCELLED"}, {"n": "notes", "t": "nvarchar(max)", "w": 0, "a": "Catatan", "k": "Keterangan tambahan dari pengaju."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "requisition_approval": {"l": "Persetujuan FPTK", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "requisition_id", "t": "bigint", "w": 1, "a": "FPTK", "k": "FPTK yang sedang disetujui. Bila FPTK dihapus, persetujuannya ikut terhapus.", "r": "manpower_requisition"}, {"n": "approval_level", "t": "smallint", "w": 1, "a": "Level persetujuan", "k": "1 kepala departemen, 2 HR manager, 3 direksi. Satu level hanya satu baris per FPTK."}, {"n": "approver_id", "t": "bigint", "w": 1, "a": "Penyetuju", "k": "Karyawan yang memberi keputusan di level ini.", "r": "employee"}, {"n": "decision", "t": "varchar(10)", "w": 1, "a": "Keputusan", "k": "PENDING menunggu, APPROVED disetujui, REJECTED ditolak, REVISE diminta revisi.", "d": "PENDING", "v": "PENDING, APPROVED, REJECTED, REVISE"}, {"n": "decided_at", "t": "datetime2(0)", "w": 0, "a": "Waktu keputusan", "k": "Kapan penyetuju memberi keputusan."}, {"n": "notes", "t": "nvarchar(max)", "w": 0, "a": "Catatan penyetuju", "k": "Alasan atau pesan dari penyetuju."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "job_vacancy": {"l": "Lowongan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "vacancy_code", "t": "varchar(30)", "w": 1, "a": "Kode lowongan", "k": "Kode unik, mis. VAC-2026-001.", "u": 1}, {"n": "requisition_id", "t": "bigint", "w": 1, "a": "FPTK asal", "k": "Setiap lowongan harus berasal dari FPTK.", "r": "manpower_requisition"}, {"n": "title", "t": "nvarchar(150)", "w": 1, "a": "Judul lowongan", "k": "Judul yang tampil di iklan."}, {"n": "job_description", "t": "nvarchar(max)", "w": 1, "a": "Deskripsi pekerjaan", "k": "Uraian tugas dan tanggung jawab."}, {"n": "qualification", "t": "nvarchar(max)", "w": 1, "a": "Kualifikasi", "k": "Syarat pelamar yang ditampilkan di iklan."}, {"n": "work_location", "t": "nvarchar(100)", "w": 1, "a": "Lokasi kerja", "k": "Kota atau alamat penempatan."}, {"n": "show_salary", "t": "bigint", "w": 1, "a": "Tampilkan gaji?", "k": "1 = kisaran gaji ditampilkan di iklan, 0 = tidak.", "d": "0"}, {"n": "open_date", "t": "date", "w": 1, "a": "Tanggal dibuka", "k": "Mulai menerima lamaran."}, {"n": "close_date", "t": "date", "w": 0, "a": "Tanggal ditutup", "k": "Tidak boleh sebelum tanggal dibuka."}, {"n": "status", "t": "varchar(20)", "w": 1, "a": "Status lowongan", "k": "DRAFT, OPEN dibuka, ON_HOLD ditunda, CLOSED ditutup, CANCELLED dibatalkan.", "d": "DRAFT", "v": "DRAFT, OPEN, ON_HOLD, CLOSED, CANCELLED"}, {"n": "created_by", "t": "bigint", "w": 1, "a": "Dibuat oleh", "k": "Karyawan (HRD) yang membuat lowongan.", "r": "employee"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "job_vacancy_channel": {"l": "Media lowongan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "vacancy_id", "t": "bigint", "w": 1, "a": "Lowongan", "k": "Lowongan yang dipasang. Bila lowongan dihapus, datanya ikut terhapus.", "r": "job_vacancy"}, {"n": "channel", "t": "varchar(20)", "w": 1, "a": "Media publikasi", "k": "Tempat iklan dipasang. Satu media hanya sekali per lowongan.", "v": "WEBSITE, JOBSTREET, LINKEDIN, GLINTS, KALIBRR, SOCIAL_MEDIA' 'JOB_FAIR, CAMPUS, REFERRAL, DISNAKER, HEADHUNTER, OTHER"}, {"n": "posting_url", "t": "varchar(500)", "w": 0, "a": "Link iklan", "k": "Alamat iklan di media tersebut."}, {"n": "posted_at", "t": "date", "w": 1, "a": "Tanggal tayang", "k": "Kapan iklan mulai tayang."}, {"n": "expired_at", "t": "date", "w": 0, "a": "Tanggal berakhir", "k": "Kapan iklan berhenti tayang."}, {"n": "cost", "t": "decimal(15,2)", "w": 1, "a": "Biaya iklan", "k": "Biaya pemasangan dalam rupiah, 0 bila gratis. Dipakai untuk membandingkan efektivitas media.", "d": "0"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "candidate": {"l": "Kandidat (pelamar)", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "nik_ktp", "t": "char(16)", "w": 0, "a": "NIK KTP", "k": "16 digit angka. Boleh kosong, tapi bila diisi tidak boleh sama dengan kandidat lain.", "x": "tepat 16 digit angka"}, {"n": "full_name", "t": "nvarchar(150)", "w": 1, "a": "Nama lengkap", "k": "Nama sesuai KTP."}, {"n": "email", "t": "varchar(150)", "w": 1, "a": "Email", "k": "Tidak boleh sama. Dipakai mengirim nomor lamaran dan link kuesioner.", "u": 1}, {"n": "phone", "t": "varchar(20)", "w": 1, "a": "No. HP / WhatsApp", "k": "Nomor yang bisa dihubungi."}, {"n": "birth_place", "t": "nvarchar(100)", "w": 0, "a": "Tempat lahir", "k": "Kota atau kabupaten tempat lahir sesuai KTP."}, {"n": "birth_date", "t": "date", "w": 0, "a": "Tanggal lahir", "k": "Tanggal lahir sesuai KTP. Tidak dikirim ke AI."}, {"n": "gender", "t": "char(1)", "w": 0, "a": "Jenis kelamin", "k": "L = laki-laki, P = perempuan.", "v": "L, P"}, {"n": "marital_status", "t": "varchar(20)", "w": 0, "a": "Status pernikahan", "k": "BELUM_MENIKAH, MENIKAH, atau CERAI.", "v": "BELUM_MENIKAH, MENIKAH, CERAI"}, {"n": "address", "t": "nvarchar(max)", "w": 0, "a": "Alamat", "k": "Alamat tinggal."}, {"n": "city", "t": "nvarchar(100)", "w": 0, "a": "Kota domisili", "k": "Kota tempat tinggal sekarang; dipakai HRD menilai jarak ke lokasi kerja."}, {"n": "last_education", "t": "varchar(10)", "w": 0, "a": "Pendidikan terakhir", "k": "SD sampai S3.", "v": "SD, SMP, SMA/SMK, D1, D2, D3, D4, S1, S2, S3"}, {"n": "major", "t": "nvarchar(100)", "w": 0, "a": "Jurusan", "k": "Jurusan pendidikan terakhir, mis. Manajemen."}, {"n": "institution", "t": "nvarchar(150)", "w": 0, "a": "Sekolah / kampus", "k": "Nama institusi pendidikan terakhir."}, {"n": "gpa", "t": "decimal(3,2)", "w": 0, "a": "IPK / nilai akhir", "k": "Mis. 3,45."}, {"n": "experience_years", "t": "decimal(4,1)", "w": 1, "a": "Total pengalaman (tahun)", "k": "Lama pengalaman kerja keseluruhan, boleh pecahan, mis. 2,5.", "d": "0"}, {"n": "linkedin_url", "t": "varchar(300)", "w": 0, "a": "Profil LinkedIn", "k": "Alamat profil LinkedIn bila pelamar mencantumkan (opsional)."}, {"n": "skills", "t": "nvarchar(max)", "w": 0, "a": "Keahlian", "k": "Daftar keahlian, mis. Microsoft Excel, Input data."}, {"n": "privacy_consent_at", "t": "datetime2(0)", "w": 0, "a": "Waktu persetujuan UU PDP", "k": "Bukti pelamar menyetujui pengolahan data pribadi (UU 27/2022)."}, {"n": "is_blacklisted", "t": "bigint", "w": 1, "a": "Masuk daftar hitam?", "k": "1 = kandidat tidak boleh diproses lagi, 0 = normal.", "d": "0"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "candidate_experience": {"l": "Pengalaman kerja kandidat", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "candidate_id", "t": "bigint", "w": 1, "a": "Kandidat", "k": "Pemilik riwayat kerja. Bila kandidat dihapus, datanya ikut terhapus.", "r": "candidate"}, {"n": "company_name", "t": "nvarchar(150)", "w": 1, "a": "Nama perusahaan", "k": "Nama perusahaan tempat kandidat pernah atau sedang bekerja."}, {"n": "position", "t": "nvarchar(100)", "w": 1, "a": "Jabatan", "k": "Jabatan di perusahaan tersebut."}, {"n": "start_date", "t": "date", "w": 1, "a": "Mulai bekerja", "k": "Tanggal mulai bekerja di perusahaan tersebut."}, {"n": "end_date", "t": "date", "w": 0, "a": "Selesai bekerja", "k": "Kosong = masih bekerja di sana. Tidak boleh sebelum tanggal mulai."}, {"n": "last_salary", "t": "decimal(15,2)", "w": 0, "a": "Gaji terakhir", "k": "Gaji terakhir di perusahaan tersebut, bahan pertimbangan negosiasi gaji."}, {"n": "reason_leaving", "t": "nvarchar(max)", "w": 0, "a": "Alasan pindah", "k": "Alasan keluar atau ingin pindah dari perusahaan tersebut."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "candidate_document": {"l": "Dokumen kandidat", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "candidate_id", "t": "bigint", "w": 1, "a": "Kandidat", "k": "Pemilik dokumen. Bila kandidat dihapus, dokumennya ikut terhapus.", "r": "candidate"}, {"n": "doc_type", "t": "varchar(20)", "w": 1, "a": "Jenis dokumen", "k": "CV saat melamar (tahap 3); KTP, KK, NPWP, ijazah, SKCK, rekening, BPJS, dll. saat pemberkasan (tahap 9).", "v": "CV, SURAT_LAMARAN, PORTOFOLIO, SERTIFIKAT' 'KTP, KK, NPWP, IJAZAH, TRANSKRIP, SKCK, PAS_FOTO' 'BUKU_REKENING, BPJS_KESEHATAN, BPJS_TK, PAKLARING, OTHER"}, {"n": "file_url", "t": "varchar(500)", "w": 1, "a": "Lokasi file", "k": "Alamat penyimpanan file dokumen."}, {"n": "uploaded_at", "t": "datetime2(0)", "w": 1, "a": "Waktu unggah", "k": "Terisi otomatis saat file diunggah.", "d": "waktu saat ini"}, {"n": "is_verified", "t": "bigint", "w": 1, "a": "Sudah diverifikasi?", "k": "1 = sudah dicek keasliannya oleh HRD, 0 = belum.", "d": "0"}, {"n": "verified_by", "t": "bigint", "w": 0, "a": "Diverifikasi oleh", "k": "Karyawan yang memeriksa dokumen.", "r": "employee"}, {"n": "verified_at", "t": "datetime2(0)", "w": 0, "a": "Waktu verifikasi", "k": "Kapan HRD selesai memeriksa dokumen."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "application": {"l": "Lamaran", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_no", "t": "varchar(30)", "w": 1, "a": "Nomor lamaran", "k": "Dibuat otomatis oleh aplikasi saat lamaran dikirim. Tidak boleh sama.", "u": 1}, {"n": "candidate_id", "t": "bigint", "w": 1, "a": "Kandidat", "k": "Pelamar. Satu kandidat hanya bisa melamar sekali ke lowongan yang sama.", "r": "candidate"}, {"n": "vacancy_id", "t": "bigint", "w": 1, "a": "Lowongan", "k": "Lowongan yang dilamar.", "r": "job_vacancy"}, {"n": "source_channel", "t": "varchar(20)", "w": 0, "a": "Sumber info lowongan", "k": "Dari mana pelamar tahu lowongan, mis. JOBSTREET, REFERRAL."}, {"n": "referred_by", "t": "bigint", "w": 0, "a": "Direferensikan oleh", "k": "Karyawan yang merekomendasikan pelamar (bila lewat referral).", "r": "employee"}, {"n": "expected_salary", "t": "decimal(15,2)", "w": 0, "a": "Gaji yang diharapkan", "k": "Gaji bulanan yang diminta pelamar di form lamaran (langkah 5)."}, {"n": "available_date", "t": "date", "w": 0, "a": "Tanggal bisa mulai kerja", "k": "Tanggal paling cepat pelamar bisa mulai bekerja, diisi di form lamaran (langkah 5)."}, {"n": "applied_at", "t": "datetime2(0)", "w": 1, "a": "Waktu melamar", "k": "Terisi otomatis saat lamaran dibuat.", "d": "waktu saat ini"}, {"n": "current_stage_id", "t": "smallint", "w": 1, "a": "Tahap saat ini", "k": "Diisi otomatis oleh trigger dari riwayat tahap. Awalnya 3 (penerimaan lamaran).", "r": "recruitment_stage", "d": "3"}, {"n": "status", "t": "varchar(20)", "w": 1, "a": "Status lamaran", "k": "IN_PROGRESS sedang diproses, ON_HOLD ditunda, REJECTED gugur (otomatis bila ada hasil FAILED), WITHDRAWN kandidat mundur, HIRED diterima.", "d": "IN_PROGRESS", "v": "IN_PROGRESS, ON_HOLD, REJECTED, WITHDRAWN, HIRED"}, {"n": "rejected_reason", "t": "nvarchar(max)", "w": 0, "a": "Alasan ditolak", "k": "Alasan lamaran ditolak atau gugur, untuk arsip dan jawaban ke pelamar."}, {"n": "closed_at", "t": "datetime2(0)", "w": 0, "a": "Waktu lamaran ditutup", "k": "Terisi otomatis saat lamaran gugur; diisi aplikasi saat HIRED / WITHDRAWN."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "application_stage_log": {"l": "Riwayat tahap lamaran", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_id", "t": "bigint", "w": 1, "a": "Lamaran", "k": "Lamaran yang menjalani tahap ini. Ikut terhapus bila lamaran dihapus.", "r": "application"}, {"n": "stage_id", "t": "smallint", "w": 1, "a": "Tahap", "k": "Tahap 3 sampai 12. Satu tahap hanya satu baris per lamaran.", "r": "recruitment_stage"}, {"n": "started_at", "t": "datetime2(0)", "w": 1, "a": "Mulai tahap", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "completed_at", "t": "datetime2(0)", "w": 0, "a": "Selesai tahap", "k": "Kosong = tahap masih berjalan."}, {"n": "result", "t": "varchar(10)", "w": 1, "a": "Hasil", "k": "PENDING berjalan, PASSED lolos, FAILED gugur (lamaran otomatis REJECTED), SKIPPED dilewati, HOLD ditunda.", "d": "PENDING", "v": "PENDING, PASSED, FAILED, SKIPPED, HOLD"}, {"n": "score", "t": "decimal(5,2)", "w": 0, "a": "Nilai", "k": "Nilai tahap bila ada, mis. skor akhir kuesioner."}, {"n": "notes", "t": "nvarchar(max)", "w": 0, "a": "Catatan", "k": "Alasan lolos atau gugur."}, {"n": "evaluated_by", "t": "bigint", "w": 0, "a": "Dinilai oleh", "k": "Karyawan yang memutuskan hasil tahap.", "r": "employee"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "screening_question": {"l": "Soal kuesioner", "c": [{"n": "id", "t": "smallint", "w": 1, "a": "ID soal", "k": "Nomor unik soal (dibuat otomatis).", "pk": 1, "auto": 1}, {"n": "code", "t": "varchar(10)", "w": 1, "a": "Kode soal", "k": "UMUM-01..04 untuk soal umum; OPS, SLS, KEU, ADM-01..06 untuk soal bidang.", "u": 1}, {"n": "job_field_id", "t": "smallint", "w": 0, "a": "Bidang", "k": "Bidang soal. Kosong = soal umum untuk semua bidang.", "r": "job_field"}, {"n": "question_type", "t": "varchar(10)", "w": 1, "a": "Jenis soal", "k": "SCENARIO = pilihan situasi (pilih A–D + alasan), OPEN = cerita pengalaman.", "v": "SCENARIO, OPEN"}, {"n": "dimension", "t": "varchar(20)", "w": 1, "a": "Dimensi yang dinilai", "k": "Salah satu dari 6 dimensi kepribadian kerja.", "v": "INTEGRITAS, TANGGUNG_JAWAB, KERJA_SAMA' 'PEMECAHAN_MASALAH, KETAHANAN, KETELITIAN"}, {"n": "sort_order", "t": "smallint", "w": 1, "a": "Urutan tampil", "k": "1–4 soal umum, 5–10 soal bidang."}, {"n": "min_chars", "t": "smallint", "w": 1, "a": "Minimal karakter jawaban", "k": "50 untuk alasan soal pilihan, 300 untuk soal cerita.", "d": "0"}, {"n": "question_text", "t": "nvarchar(max)", "w": 1, "a": "Isi soal", "k": "Teks soal yang tampil ke kandidat: situasi kerja (soal pilihan) atau pertanyaan pengalaman (soal cerita)."}, {"n": "options", "t": "nvarchar(max)", "w": 0, "a": "Pilihan jawaban (JSON)", "k": "Pilihan A–D beserta skor kunci 1–4. Wajib untuk soal pilihan, kosong untuk soal cerita.", "x": "harus JSON yang valid"}, {"n": "rubric", "t": "nvarchar(max)", "w": 1, "a": "Rubrik penilaian", "k": "Ciri jawaban yang baik; acuan AI dan HRD saat menilai."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "screening_response": {"l": "Kiriman kuesioner", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_id", "t": "bigint", "w": 1, "a": "Lamaran", "k": "Lamaran yang dikirimi kuesioner.", "r": "application"}, {"n": "job_field_id", "t": "smallint", "w": 0, "a": "Bidang soal yang dikirim", "k": "Diambil dari jabatan yang dilamar.", "r": "job_field"}, {"n": "access_token", "t": "varchar(64)", "w": 1, "a": "Kode link kuesioner", "k": "Kode acak unik di link yang dikirim ke kandidat.", "u": 1}, {"n": "sent_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dikirim", "k": "Kapan link dikirim ke kandidat.", "d": "waktu saat ini"}, {"n": "deadline_at", "t": "datetime2(0)", "w": 1, "a": "Batas pengisian", "k": "Standar 2 × 24 jam setelah dikirim. Harus setelah waktu kirim."}, {"n": "started_at", "t": "datetime2(0)", "w": 0, "a": "Mulai mengisi", "k": "Kapan kandidat pertama kali membuka dan mulai mengisi kuesioner."}, {"n": "submitted_at", "t": "datetime2(0)", "w": 0, "a": "Waktu jawaban dikirim", "k": "Wajib terisi bila status SUBMITTED."}, {"n": "status", "t": "varchar(15)", "w": 1, "a": "Status kuesioner", "k": "SENT terkirim, IN_PROGRESS sedang diisi, SUBMITTED selesai (hanya satu per lamaran), EXPIRED lewat batas, CANCELLED dibatalkan.", "d": "SENT", "v": "SENT, IN_PROGRESS, SUBMITTED, EXPIRED, CANCELLED"}, {"n": "honesty_ack_at", "t": "datetime2(0)", "w": 0, "a": "Pernyataan jawaban sendiri", "k": "Waktu kandidat menyatakan jawabannya ditulis sendiri. Wajib sebelum SUBMITTED."}, {"n": "ai_consent_at", "t": "datetime2(0)", "w": 0, "a": "Persetujuan analisis AI", "k": "Kosong = kandidat tidak setuju; jawaban hanya ditinjau HRD."}, {"n": "final_scores", "t": "nvarchar(max)", "w": 0, "a": "Skor akhir HRD (JSON)", "k": "Skor 1–5 per dimensi setelah ditinjau HRD, mis. {\"INTEGRITAS\":4}.", "x": "harus JSON yang valid"}, {"n": "ai_agreement", "t": "varchar(15)", "w": 0, "a": "Penilaian HRD atas hasil AI", "k": "SETUJU, DISESUAIKAN (HRD mengubah skor), atau TIDAK_SETUJU.", "v": "SETUJU, DISESUAIKAN, TIDAK_SETUJU"}, {"n": "hrd_notes", "t": "nvarchar(max)", "w": 0, "a": "Catatan HRD", "k": "Catatan HRD setelah meninjau jawaban dan hasil AI, mis. hal yang perlu didalami saat wawancara."}, {"n": "reviewed_by", "t": "bigint", "w": 0, "a": "Ditinjau oleh", "k": "Karyawan HRD yang meninjau.", "r": "employee"}, {"n": "reviewed_at", "t": "datetime2(0)", "w": 0, "a": "Waktu ditinjau", "k": "Kapan HRD selesai meninjau kuesioner."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "screening_answer": {"l": "Jawaban kuesioner", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "response_id", "t": "bigint", "w": 1, "a": "Kiriman kuesioner", "k": "Kuesioner tempat jawaban ini berada. Satu soal hanya satu jawaban per kiriman.", "r": "screening_response"}, {"n": "question_id", "t": "smallint", "w": 1, "a": "Soal", "k": "Soal yang dijawab.", "r": "screening_question"}, {"n": "selected_option", "t": "char(1)", "w": 0, "a": "Pilihan jawaban", "k": "A, B, C, atau D (untuk soal pilihan).", "v": "A, B, C, D"}, {"n": "answer_text", "t": "nvarchar(max)", "w": 0, "a": "Jawaban teks", "k": "Alasan (soal pilihan) atau cerita pengalaman (soal cerita). Minimal salah satu dari pilihan atau teks harus terisi."}, {"n": "answered_at", "t": "datetime2(0)", "w": 1, "a": "Waktu menjawab", "k": "Terisi otomatis.", "d": "waktu saat ini"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "screening_ai_review": {"l": "Analisis AI kuesioner", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "response_id", "t": "bigint", "w": 1, "a": "Kiriman kuesioner", "k": "Kuesioner yang dianalisis. Boleh dianalisis lebih dari sekali; yang dipakai yang terbaru.", "r": "screening_response"}, {"n": "model_name", "t": "varchar(60)", "w": 1, "a": "Model AI", "k": "Nama model AI yang dipakai, untuk audit."}, {"n": "prompt_version", "t": "varchar(20)", "w": 1, "a": "Versi rubrik / instruksi", "k": "Versi instruksi AI yang dipakai, untuk audit."}, {"n": "analyzed_at", "t": "datetime2(0)", "w": 1, "a": "Waktu analisis", "k": "Terisi otomatis.", "d": "waktu saat ini"}, {"n": "dimension_scores", "t": "nvarchar(max)", "w": 1, "a": "Skor per dimensi (JSON)", "k": "Skor 1–5 untuk setiap dimensi, mis. {\"INTEGRITAS\":4}.", "x": "harus JSON yang valid"}, {"n": "evidence", "t": "nvarchar(max)", "w": 0, "a": "Kutipan bukti (JSON)", "k": "Kutipan jawaban kandidat yang mendukung skor.", "x": "harus JSON yang valid"}, {"n": "summary", "t": "nvarchar(max)", "w": 1, "a": "Ringkasan", "k": "Gambaran gaya kerja kandidat."}, {"n": "strengths", "t": "nvarchar(max)", "w": 0, "a": "Kekuatan", "k": "Hal positif yang terlihat dari jawaban kandidat menurut AI."}, {"n": "concerns", "t": "nvarchar(max)", "w": 0, "a": "Hal yang perlu diperhatikan", "k": "Hal yang perlu diwaspadai atau didalami menurut AI."}, {"n": "flags", "t": "nvarchar(max)", "w": 0, "a": "Tanda (JSON)", "k": "JAWABAN_GENERIK, TIDAK_KONSISTEN, TERLALU_SINGKAT, PERLU_DIDALAMI. Bahan wawancara, bukan alasan gugur.", "x": "harus JSON yang valid"}, {"n": "recommendation", "t": "varchar(15)", "w": 1, "a": "Rekomendasi AI", "k": "LANJUT, PERTIMBANGKAN, atau TIDAK_LANJUT. Hanya saran; keputusan tetap di HRD.", "v": "LANJUT, PERTIMBANGKAN, TIDAK_LANJUT"}, {"n": "followup_questions", "t": "nvarchar(max)", "w": 0, "a": "Pertanyaan pendalaman", "k": "Bahan pertanyaan untuk wawancara HRD (tahap 5)."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "interview": {"l": "Wawancara", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_id", "t": "bigint", "w": 1, "a": "Lamaran", "k": "Lamaran yang diwawancarai.", "r": "application"}, {"n": "stage_id", "t": "smallint", "w": 1, "a": "Tahap", "k": "5 = wawancara HRD, 7 = wawancara user.", "r": "recruitment_stage"}, {"n": "interview_type", "t": "varchar(15)", "w": 1, "a": "Jenis wawancara", "k": "HR, USER, MANAGEMENT (direksi), atau PANEL.", "v": "HR, USER, MANAGEMENT, PANEL"}, {"n": "scheduled_at", "t": "datetime2(0)", "w": 1, "a": "Jadwal", "k": "Tanggal dan jam wawancara."}, {"n": "duration_min", "t": "smallint", "w": 1, "a": "Durasi (menit)", "k": "Bawaan 60 menit.", "d": "60"}, {"n": "mode", "t": "varchar(10)", "w": 1, "a": "Cara wawancara", "k": "ONSITE tatap muka, ONLINE, atau PHONE.", "v": "ONSITE, ONLINE, PHONE"}, {"n": "location", "t": "nvarchar(300)", "w": 0, "a": "Lokasi / link meeting", "k": "Alamat ruang atau link meeting online."}, {"n": "status", "t": "varchar(15)", "w": 1, "a": "Status wawancara", "k": "SCHEDULED terjadwal, DONE selesai, RESCHEDULED dijadwal ulang, NO_SHOW kandidat tidak hadir, CANCELLED batal.", "d": "SCHEDULED", "v": "SCHEDULED, DONE, RESCHEDULED, NO_SHOW, CANCELLED"}, {"n": "final_result", "t": "varchar(10)", "w": 0, "a": "Hasil akhir", "k": "PASSED lolos, FAILED gagal, HOLD ditunda.", "v": "PASSED, FAILED, HOLD"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "interview_panel": {"l": "Penilaian pewawancara", "c": [{"n": "interview_id", "t": "bigint", "w": 1, "a": "Wawancara", "k": "Bagian kunci utama gabungan bersama pewawancara. Ikut terhapus bila wawancara dihapus.", "r": "interview", "pk": 1}, {"n": "interviewer_id", "t": "bigint", "w": 1, "a": "Pewawancara", "k": "Bagian kunci utama gabungan: satu pewawancara hanya satu penilaian per wawancara.", "r": "employee", "pk": 1}, {"n": "score_competency", "t": "decimal(5,2)", "w": 0, "a": "Nilai kompetensi", "k": "Kemampuan teknis / sesuai jabatan."}, {"n": "score_attitude", "t": "decimal(5,2)", "w": 0, "a": "Nilai sikap & komunikasi", "k": "Nilai sikap, sopan santun, dan cara berkomunikasi kandidat."}, {"n": "score_culture", "t": "decimal(5,2)", "w": 0, "a": "Nilai kecocokan budaya", "k": "Nilai kecocokan kandidat dengan budaya dan nilai perusahaan."}, {"n": "recommendation", "t": "varchar(15)", "w": 0, "a": "Rekomendasi", "k": "STRONG_HIRE sangat disarankan, HIRE disarankan, CONSIDER dipertimbangkan, NO_HIRE tidak disarankan.", "v": "STRONG_HIRE, HIRE, CONSIDER, NO_HIRE"}, {"n": "feedback", "t": "nvarchar(max)", "w": 0, "a": "Masukan", "k": "Catatan pewawancara."}, {"n": "submitted_at", "t": "datetime2(0)", "w": 0, "a": "Waktu penilaian dikirim", "k": "Kapan pewawancara mengirim penilaiannya; kosong = belum menilai."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "disc_assessment": {"l": "Tes DISC", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_id", "t": "bigint", "w": 1, "a": "Lamaran", "k": "Lamaran yang menjalani tes.", "r": "application"}, {"n": "test_mode", "t": "varchar(10)", "w": 1, "a": "Cara tes", "k": "ONLINE atau ONSITE.", "d": "ONLINE", "v": "ONLINE, ONSITE"}, {"n": "test_link", "t": "varchar(500)", "w": 0, "a": "Link tes", "k": "Bila tes online."}, {"n": "scheduled_at", "t": "datetime2(0)", "w": 1, "a": "Jadwal tes", "k": "Tanggal dan jam tes dijadwalkan."}, {"n": "completed_at", "t": "datetime2(0)", "w": 0, "a": "Selesai tes", "k": "Wajib terisi bila status COMPLETED."}, {"n": "status", "t": "varchar(15)", "w": 1, "a": "Status tes", "k": "SCHEDULED terjadwal, COMPLETED selesai (hanya satu per lamaran), NO_SHOW tidak hadir (boleh tes ulang), CANCELLED batal.", "d": "SCHEDULED", "v": "SCHEDULED, COMPLETED, NO_SHOW, CANCELLED"}, {"n": "score_d", "t": "decimal(5,2)", "w": 0, "a": "Skor D (Dominance)", "k": "Tegas, berorientasi hasil."}, {"n": "score_i", "t": "decimal(5,2)", "w": 0, "a": "Skor I (Influence)", "k": "Komunikatif, persuasif."}, {"n": "score_s", "t": "decimal(5,2)", "w": 0, "a": "Skor S (Steadiness)", "k": "Sabar, konsisten, kerja tim."}, {"n": "score_c", "t": "decimal(5,2)", "w": 0, "a": "Skor C (Compliance)", "k": "Teliti, taat standar."}, {"n": "primary_style", "t": "char(1)", "w": 0, "a": "Gaya utama", "k": "D, I, S, atau C. Wajib bila tes selesai.", "v": "D, I, S, C"}, {"n": "profile_pattern", "t": "varchar(10)", "w": 0, "a": "Pola profil", "k": "Kombinasi gaya, mis. SC atau DI."}, {"n": "result_detail", "t": "nvarchar(max)", "w": 0, "a": "Hasil lengkap (JSON)", "k": "Data lengkap dari aplikasi tes (grafik Most/Least/Change).", "x": "harus JSON yang valid"}, {"n": "job_fit", "t": "varchar(15)", "w": 0, "a": "Kecocokan dengan jabatan", "k": "SESUAI, CUKUP, atau KURANG_SESUAI dibanding profil DISC ideal jabatan.", "v": "SESUAI, CUKUP, KURANG_SESUAI"}, {"n": "interpretation", "t": "nvarchar(max)", "w": 0, "a": "Interpretasi", "k": "Penjelasan hasil tes."}, {"n": "report_url", "t": "varchar(500)", "w": 0, "a": "Link laporan", "k": "Alamat file laporan hasil tes dari aplikasi DISC."}, {"n": "reviewed_by", "t": "bigint", "w": 0, "a": "Dibaca oleh", "k": "Karyawan (HRD) yang membaca hasil tes.", "r": "employee"}, {"n": "reviewed_at", "t": "datetime2(0)", "w": 0, "a": "Waktu dibaca", "k": "Kapan HRD selesai membaca hasil tes."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "reference_check": {"l": "Cek referensi", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "application_id", "t": "bigint", "w": 1, "a": "Lamaran", "k": "Lamaran yang dicek referensinya.", "r": "application"}, {"n": "referee_name", "t": "nvarchar(150)", "w": 1, "a": "Nama pemberi referensi", "k": "Nama orang yang memberi referensi tentang kandidat."}, {"n": "referee_company", "t": "nvarchar(150)", "w": 0, "a": "Perusahaan pemberi referensi", "k": "Perusahaan tempat pemberi referensi bekerja (biasanya perusahaan lama kandidat)."}, {"n": "referee_position", "t": "nvarchar(100)", "w": 0, "a": "Jabatan pemberi referensi", "k": "Jabatan pemberi referensi."}, {"n": "relationship", "t": "nvarchar(50)", "w": 0, "a": "Hubungan dengan kandidat", "k": "Mis. atasan, rekan kerja, HR perusahaan lama."}, {"n": "referee_phone", "t": "varchar(20)", "w": 0, "a": "No. telepon", "k": "Nomor yang dihubungi HRD untuk cek referensi."}, {"n": "checked_at", "t": "datetime2(0)", "w": 0, "a": "Waktu dicek", "k": "Kapan HRD menghubungi pemberi referensi."}, {"n": "feedback", "t": "nvarchar(max)", "w": 0, "a": "Keterangan yang diberikan", "k": "Ringkasan keterangan pemberi referensi tentang kinerja dan perilaku kandidat."}, {"n": "result", "t": "varchar(15)", "w": 1, "a": "Kesimpulan", "k": "PENDING belum dicek, POSITIVE baik, NEUTRAL netral, NEGATIVE buruk, UNREACHABLE tidak bisa dihubungi.", "d": "PENDING", "v": "PENDING, POSITIVE, NEUTRAL, NEGATIVE, UNREACHABLE"}, {"n": "checked_by", "t": "bigint", "w": 0, "a": "Dicek oleh", "k": "Karyawan (HRD) yang menghubungi pemberi referensi.", "r": "employee"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "employment_contract": {"l": "Kontrak kerja", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "contract_no", "t": "varchar(40)", "w": 1, "a": "Nomor kontrak", "k": "Tidak boleh sama.", "u": 1}, {"n": "employee_id", "t": "bigint", "w": 1, "a": "Karyawan", "k": "Pemilik kontrak.", "r": "employee"}, {"n": "contract_type", "t": "varchar(10)", "w": 1, "a": "Jenis kontrak", "k": "PKWT = kontrak waktu tertentu, PKWTT = tetap.", "v": "PKWT, PKWTT"}, {"n": "start_date", "t": "date", "w": 1, "a": "Mulai kontrak", "k": "Tanggal kontrak mulai berlaku, biasanya sama dengan tanggal masuk."}, {"n": "end_date", "t": "date", "w": 0, "a": "Akhir kontrak", "k": "Wajib untuk PKWT dan harus setelah tanggal mulai."}, {"n": "probation_end", "t": "date", "w": 0, "a": "Akhir masa percobaan", "k": "Hanya untuk PKWTT, paling lama 3 bulan dari tanggal mulai (UU Ketenagakerjaan Ps. 60)."}, {"n": "basic_salary", "t": "decimal(15,2)", "w": 1, "a": "Gaji pokok", "k": "Harus lebih dari 0.", "x": "harus lebih dari 0"}, {"n": "fixed_allowance", "t": "decimal(15,2)", "w": 1, "a": "Tunjangan tetap", "k": "Bawaan 0.", "d": "0"}, {"n": "other_benefits", "t": "nvarchar(max)", "w": 0, "a": "Benefit lain", "k": "Mis. BPJS, asuransi, THR, cuti."}, {"n": "signed_by_employee_at", "t": "datetime2(0)", "w": 0, "a": "Ditandatangani karyawan", "k": "Waktu karyawan menandatangani."}, {"n": "signed_by_company_at", "t": "datetime2(0)", "w": 0, "a": "Ditandatangani perusahaan", "k": "Waktu perusahaan menandatangani."}, {"n": "company_signatory_id", "t": "bigint", "w": 0, "a": "Penandatangan perusahaan", "k": "Karyawan yang menandatangani atas nama perusahaan.", "r": "employee"}, {"n": "document_url", "t": "varchar(500)", "w": 0, "a": "Link dokumen kontrak", "k": "Alamat file kontrak yang sudah ditandatangani."}, {"n": "status", "t": "varchar(15)", "w": 1, "a": "Status kontrak", "k": "DRAFT, ACTIVE berlaku (hanya satu per karyawan), EXTENDED diperpanjang, ENDED berakhir, TERMINATED diputus.", "d": "DRAFT", "v": "DRAFT, ACTIVE, EXTENDED, ENDED, TERMINATED"}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "onboarding_task_template": {"l": "Template tugas onboarding", "c": [{"n": "id", "t": "smallint", "w": 1, "a": "ID template", "k": "Nomor unik template (dibuat otomatis).", "pk": 1, "auto": 1}, {"n": "task_name", "t": "nvarchar(150)", "w": 1, "a": "Nama tugas", "k": "Mis. Pendaftaran BPJS Kesehatan."}, {"n": "category", "t": "varchar(15)", "w": 1, "a": "Kategori", "k": "ADMIN, IT, FACILITY (fasilitas), ORIENTATION, TRAINING, atau BPJS.", "v": "ADMIN, IT, FACILITY, ORIENTATION, TRAINING, BPJS"}, {"n": "default_pic", "t": "nvarchar(50)", "w": 1, "a": "Bagian penanggung jawab", "k": "Mis. GA, IT, HRD, HSE, Atasan."}, {"n": "due_offset_days", "t": "smallint", "w": 1, "a": "Jatuh tempo (hari dari tanggal masuk)", "k": "Negatif = sebelum hari pertama, mis. -2 = H-2; 7 = H+7."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "onboarding_task": {"l": "Tugas onboarding", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "employee_id", "t": "bigint", "w": 1, "a": "Karyawan baru", "k": "Karyawan yang menjalani onboarding. Ikut terhapus bila karyawan dihapus.", "r": "employee"}, {"n": "template_id", "t": "smallint", "w": 0, "a": "Template asal", "k": "Template yang menjadi dasar tugas ini. Kosong bila tugas dibuat manual.", "r": "onboarding_task_template"}, {"n": "task_name", "t": "nvarchar(150)", "w": 1, "a": "Nama tugas", "k": "Nama tugas, disalin dari template atau ditulis manual."}, {"n": "category", "t": "varchar(15)", "w": 1, "a": "Kategori", "k": "ADMIN, IT, FACILITY, ORIENTATION, TRAINING, atau BPJS.", "v": "ADMIN, IT, FACILITY, ORIENTATION, TRAINING, BPJS"}, {"n": "pic_id", "t": "bigint", "w": 0, "a": "PIC", "k": "Karyawan yang bertanggung jawab menyelesaikan tugas.", "r": "employee"}, {"n": "due_date", "t": "date", "w": 0, "a": "Jatuh tempo", "k": "Batas waktu tugas, dihitung dari tanggal masuk + jatuh tempo template."}, {"n": "done_at", "t": "datetime2(0)", "w": 0, "a": "Waktu selesai", "k": "Kosong = belum selesai. Lewat jatuh tempo dan masih kosong = terlambat."}, {"n": "notes", "t": "nvarchar(max)", "w": 0, "a": "Catatan", "k": "Catatan pelaksanaan tugas."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "probation_review": {"l": "Penilaian masa percobaan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "employee_id", "t": "bigint", "w": 1, "a": "Karyawan", "k": "Karyawan PKWTT yang sedang masa percobaan.", "r": "employee"}, {"n": "review_month", "t": "smallint", "w": 1, "a": "Bulan ke-", "k": "1 sampai 3. Satu penilaian per bulan per karyawan.", "x": "1 sampai 3"}, {"n": "review_date", "t": "date", "w": 1, "a": "Tanggal penilaian", "k": "Tanggal atasan melakukan penilaian bulan tersebut."}, {"n": "reviewer_id", "t": "bigint", "w": 1, "a": "Penilai", "k": "Biasanya atasan langsung.", "r": "employee"}, {"n": "score_performance", "t": "decimal(5,2)", "w": 0, "a": "Nilai kinerja", "k": "Nilai pencapaian target dan hasil kerja."}, {"n": "score_discipline", "t": "decimal(5,2)", "w": 0, "a": "Nilai disiplin", "k": "Nilai kehadiran, ketepatan waktu, dan kepatuhan aturan."}, {"n": "score_attitude", "t": "decimal(5,2)", "w": 0, "a": "Nilai sikap", "k": "Nilai sikap dan kerja sama."}, {"n": "total_score", "t": "decimal(5,2)", "w": 0, "a": "Nilai total", "k": "Nilai gabungan bulan tersebut."}, {"n": "recommendation", "t": "varchar(10)", "w": 1, "a": "Rekomendasi", "k": "CONTINUE lanjut ke bulan berikutnya, PASS lulus, FAIL tidak lulus.", "v": "CONTINUE, PASS, FAIL"}, {"n": "comments", "t": "nvarchar(max)", "w": 0, "a": "Komentar", "k": "Catatan atasan tentang kemajuan karyawan."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]},
+  "employee_status_history": {"l": "Riwayat status karyawan", "c": [{"n": "id", "t": "bigint", "w": 1, "a": "ID", "k": "Nomor unik setiap baris (kunci utama). Dipakai tabel lain untuk merujuk ke baris ini.", "pk": 1, "auto": 1}, {"n": "employee_id", "t": "bigint", "w": 1, "a": "Karyawan", "k": "Karyawan yang statusnya berubah.", "r": "employee"}, {"n": "from_status", "t": "varchar(20)", "w": 0, "a": "Status sebelumnya", "k": "Status karyawan sebelum perubahan, mis. PROBATION."}, {"n": "to_status", "t": "varchar(20)", "w": 1, "a": "Status baru", "k": "Status karyawan ikut berubah otomatis (trigger); PERMANENT juga mengisi tanggal diangkat tetap.", "v": "PROBATION, CONTRACT, PERMANENT, RESIGNED, TERMINATED"}, {"n": "effective_date", "t": "date", "w": 1, "a": "Tanggal berlaku", "k": "Tanggal perubahan status mulai berlaku; untuk PERMANENT juga menjadi tanggal diangkat tetap."}, {"n": "decree_no", "t": "varchar(40)", "w": 0, "a": "Nomor SK", "k": "Nomor surat keputusan. Bila diisi tidak boleh sama."}, {"n": "reason", "t": "nvarchar(max)", "w": 0, "a": "Alasan", "k": "Mis. lulus masa percobaan, mengundurkan diri."}, {"n": "approved_by", "t": "bigint", "w": 0, "a": "Disetujui oleh", "k": "Karyawan yang menyetujui perubahan status.", "r": "employee"}, {"n": "document_url", "t": "varchar(500)", "w": 0, "a": "Link dokumen SK", "k": "Alamat file SK atau surat pendukung perubahan status."}, {"n": "statusaktif", "t": "bigint", "w": 1, "a": "Status aktif", "k": "1 = data aktif, 0 = nonaktif. Data yang tidak dipakai lagi cukup dinonaktifkan, tidak dihapus.", "d": "1"}, {"n": "info", "t": "nvarchar(max)", "w": 0, "a": "Info tambahan", "k": "Catatan bebas untuk keterangan lain yang belum punya kolom sendiri."}, {"n": "modifiedby", "t": "varchar(200)", "w": 0, "a": "Diubah oleh", "k": "User atau nama orang yang terakhir mengubah data. Diisi oleh aplikasi."}, {"n": "created_at", "t": "datetime2(0)", "w": 1, "a": "Waktu dibuat", "k": "Terisi otomatis saat baris dibuat.", "d": "waktu saat ini"}, {"n": "updated_at", "t": "datetime2(0)", "w": 0, "a": "Waktu diubah", "k": "Waktu terakhir data diubah, diisi oleh aplikasi. Kosong berarti belum pernah diubah."}]}
+}/*@@KAMUS_END@@*/;
+
+// Tabel database: kolom ke-c (0-5) dan baris ke-r di diagram
+const TABLES = {
+  department:               { c: 0, r: 0, d: 'Master departemen / divisi.', k: 'code, name' },
+  job_position:             { c: 0, r: 1, d: 'Master jabatan, termasuk profil DISC ideal dan bidang soal kuesioner.', k: 'code, name, job_level, ideal_disc_profile, job_field_id' },
+  job_field:                { c: 0, r: 2, d: 'Master 4 bidang pekerjaan; menentukan paket soal kuesioner tahap 4.', k: 'code, name' },
+  recruitment_stage:        { c: 0, r: 3, d: 'Master 12 tahap rekrutmen beserta fase, penanggung jawab, dan target hari.', k: 'stage_order, code, phase, sla_days, detail_table' },
+  manpower_requisition:     { c: 1, r: 0, d: 'Tahap 1 · Form Permintaan Tenaga Kerja (FPTK).', k: 'requisition_no, headcount, reason, employment_type, salary_min/max, status' },
+  requisition_approval:     { c: 1, r: 1, d: 'Tahap 1 · Persetujuan FPTK berjenjang (kepala dept, HR manager, direksi).', k: 'approval_level, approver_id, decision' },
+  job_vacancy:              { c: 1, r: 2, d: 'Tahap 2 · Lowongan yang dibuka dari FPTK.', k: 'vacancy_code, title, open_date, close_date, status' },
+  job_vacancy_channel:      { c: 1, r: 3, d: 'Tahap 2 · Media publikasi lowongan dan biayanya.', k: 'channel, posted_at, cost' },
+  candidate:                { c: 2, r: 0, d: 'Tahap 3 · Data pribadi pelamar; disimpan sekali untuk banyak lamaran.', k: 'nik_ktp, full_name, email, last_education, skills, privacy_consent_at' },
+  candidate_experience:     { c: 2, r: 1, d: 'Tahap 3 · Riwayat pekerjaan kandidat.', k: 'company_name, position, start_date, end_date, last_salary' },
+  candidate_document:       { c: 2, r: 2, d: 'Tahap 3 & 9 · CV saat melamar dan berkas pemberkasan.', k: 'doc_type, file_url, is_verified' },
+  application:              { c: 2, r: 3, d: 'Tahap 3 · Lamaran kandidat pada satu lowongan; pusat semua tahap seleksi.', k: 'application_no, expected_salary, current_stage_id, status' },
+  application_stage_log:    { c: 2, r: 4, d: 'Jejak hasil setiap tahap per lamaran. Hasil FAILED otomatis menutup lamaran.', k: 'stage_id, result, score, evaluated_by' },
+  screening_question:       { c: 3, r: 0, d: 'Tahap 4 · Bank 28 soal kuesioner kerja (umum + per bidang).', k: 'code, question_type, dimension, options, rubric' },
+  screening_answer:         { c: 3, r: 1, d: 'Tahap 4 · Jawaban kandidat per soal.', k: 'selected_option, answer_text' },
+  screening_response:       { c: 3, r: 2, d: 'Tahap 4 · Kuesioner yang dikirim ke kandidat beserta tinjauan HRD.', k: 'access_token, deadline_at, status, ai_consent_at, final_scores, ai_agreement' },
+  screening_ai_review:      { c: 3, r: 3, d: 'Tahap 4 · Hasil analisis AI; yang dipakai analisis terbaru.', k: 'model_name, prompt_version, dimension_scores, flags, recommendation' },
+  interview:                { c: 4, r: 0, d: 'Tahap 5 & 7 · Jadwal wawancara HRD dan user.', k: 'stage_id, interview_type, scheduled_at, mode, final_result' },
+  interview_panel:          { c: 4, r: 1, d: 'Tahap 5 & 7 · Penilaian setiap pewawancara.', k: 'score_competency, score_attitude, score_culture, recommendation' },
+  disc_assessment:          { c: 4, r: 2, d: 'Tahap 6 · Jadwal dan hasil tes DISC.', k: 'score_d/i/s/c, primary_style, job_fit, status' },
+  reference_check:          { c: 4, r: 3, d: 'Tahap 8 · Hasil pengecekan referensi kerja.', k: 'referee_name, referee_company, result' },
+  employment_contract:      { c: 5, r: 0, d: 'Tahap 9 · Kontrak PKWT / PKWTT beserta gaji dan tunjangan.', k: 'contract_type, start_date, end_date, probation_end, basic_salary, status' },
+  onboarding_task_template: { c: 5, r: 1, d: 'Tahap 10 · Template 11 tugas onboarding.', k: 'task_name, category, default_pic, due_offset_days' },
+  onboarding_task:          { c: 5, r: 2, d: 'Tahap 10 · Checklist onboarding per karyawan baru.', k: 'task_name, due_date, done_at' },
+  probation_review:         { c: 5, r: 3, d: 'Tahap 11 · Evaluasi bulanan masa percobaan.', k: 'review_month, total_score, recommendation' },
+  employee_status_history:  { c: 5, r: 4, d: 'Tahap 12 · Riwayat status karyawan dan SK pengangkatan.', k: 'from_status, to_status, effective_date, decree_no' },
+  employee:                 { bar: true, d: 'Karyawan lama (approver, pewawancara, reviewer) dan karyawan baru hasil rekrutmen. Atasan langsung lewat supervisor_id (relasi ke tabel ini sendiri).', k: 'employee_no, full_name, employment_type, status, join_date, permanent_date' },
+};
+
+const ERD_COLS = [
+  { name: 'Data master', sub: '',          cls: 'g' },
+  { name: 'Tahap 1–2',   sub: 'lowongan',  cls: 'p' },
+  { name: 'Tahap 3',     sub: 'lamaran',   cls: 'p' },
+  { name: 'Tahap 4',     sub: 'kuesioner', cls: 'p' },
+  { name: 'Tahap 5–8',   sub: 'seleksi',   cls: 'p' },
+  { name: 'Tahap 9–12',  sub: 'karyawan',  cls: 't' },
+];
+
+// Warna garis relasi = tabel induk
+const PCOLOR = {
+  department: '#6B7280', job_field: '#65A30D', job_position: '#A16207', recruitment_stage: '#0891B2',
+  manpower_requisition: '#D97706', job_vacancy: '#2563EB', candidate: '#EA580C', application: '#7C3AED',
+  screening_question: '#C026D3', screening_response: '#DB2777', interview: '#4F46E5', employee: '#0F766E',
+  onboarding_task_template: '#16A34A',
+};
+
+// [induk, anak, kolom FK, kategori]: utama, ref (referensi), ptg (petugas)
+const RELS = [
+  ['department', 'job_position', 'department_id', 'utama'], ['job_field', 'job_position', 'job_field_id', 'utama'],
+  ['job_field', 'screening_question', 'job_field_id', 'utama'], ['department', 'manpower_requisition', 'department_id', 'utama'],
+  ['job_position', 'manpower_requisition', 'position_id', 'utama'], ['job_position', 'employee', 'position_id', 'utama'],
+  ['manpower_requisition', 'requisition_approval', 'requisition_id', 'utama'], ['manpower_requisition', 'job_vacancy', 'requisition_id', 'utama'],
+  ['job_vacancy', 'job_vacancy_channel', 'vacancy_id', 'utama'], ['job_vacancy', 'application', 'vacancy_id', 'utama'],
+  ['candidate', 'candidate_experience', 'candidate_id', 'utama'], ['candidate', 'candidate_document', 'candidate_id', 'utama'],
+  ['candidate', 'application', 'candidate_id', 'utama'], ['candidate', 'employee', 'candidate_id', 'utama'],
+  ['application', 'application_stage_log', 'application_id', 'utama'], ['application', 'screening_response', 'application_id', 'utama'],
+  ['application', 'interview', 'application_id', 'utama'], ['application', 'disc_assessment', 'application_id', 'utama'],
+  ['application', 'reference_check', 'application_id', 'utama'], ['application', 'employee', 'application_id', 'utama'],
+  ['screening_question', 'screening_answer', 'question_id', 'utama'], ['screening_response', 'screening_answer', 'response_id', 'utama'],
+  ['screening_response', 'screening_ai_review', 'response_id', 'utama'], ['interview', 'interview_panel', 'interview_id', 'utama'],
+  ['employee', 'employment_contract', 'employee_id', 'utama'], ['employee', 'onboarding_task', 'employee_id', 'utama'],
+  ['employee', 'probation_review', 'employee_id', 'utama'], ['employee', 'employee_status_history', 'employee_id', 'utama'],
+  ['onboarding_task_template', 'onboarding_task', 'template_id', 'utama'],
+  ['department', 'employee', 'department_id', 'ref'], ['job_field', 'screening_response', 'job_field_id', 'ref'],
+  ['recruitment_stage', 'application', 'current_stage_id', 'ref'], ['recruitment_stage', 'application_stage_log', 'stage_id', 'ref'],
+  ['recruitment_stage', 'interview', 'stage_id', 'ref'],
+  ['employee', 'manpower_requisition', 'requested_by', 'ptg'], ['employee', 'manpower_requisition', 'replaced_employee_id', 'ptg'],
+  ['employee', 'requisition_approval', 'approver_id', 'ptg'], ['employee', 'job_vacancy', 'created_by', 'ptg'],
+  ['employee', 'candidate_document', 'verified_by', 'ptg'], ['employee', 'application', 'referred_by', 'ptg'],
+  ['employee', 'application_stage_log', 'evaluated_by', 'ptg'], ['employee', 'screening_response', 'reviewed_by', 'ptg'],
+  ['employee', 'interview_panel', 'interviewer_id', 'ptg'], ['employee', 'disc_assessment', 'reviewed_by', 'ptg'],
+  ['employee', 'reference_check', 'checked_by', 'ptg'], ['employee', 'employment_contract', 'company_signatory_id', 'ptg'],
+  ['employee', 'onboarding_task', 'pic_id', 'ptg'], ['employee', 'probation_review', 'reviewer_id', 'ptg'],
+  ['employee', 'employee_status_history', 'approved_by', 'ptg'],
+];
+
+const RULES = [
+  { cls: 'r', t: 'PKWT tanpa masa percobaan', s: 'UU Ketenagakerjaan Ps. 58.', by: ['ck_employee_pkwt_status', 'ck_contract_pkwt'],
+    d: 'Kontrak waktu tertentu tidak boleh mensyaratkan masa percobaan, dan karyawan PKWT tidak bisa berstatus PROBATION atau PERMANENT.' },
+  { cls: 'r', t: 'Masa percobaan maks. 3 bulan', s: 'Khusus PKWTT, Ps. 60.', by: ['ck_contract_probation'],
+    d: 'Tanggal akhir masa percobaan harus di antara tanggal mulai dan 3 bulan setelahnya.' },
+  { cls: 'a', t: 'PKWT wajib punya tanggal akhir', s: 'Kontrak harus jelas kapan berakhir.', by: ['ck_contract_pkwt', 'ck_contract_dates'],
+    d: 'Kontrak PKWT tanpa end_date ditolak; end_date juga harus setelah start_date.' },
+  { cls: 'p', t: 'Satu karyawan, satu kontrak aktif', s: 'Tidak ada dua kontrak ACTIVE bersamaan.', by: ['ux_contract_active'],
+    d: 'Pengganti aturan "satu offering diterima" sejak fase Penawaran dihapus.' },
+  { cls: 'p', t: 'Data kandidat tidak dobel', s: 'NIK & email unik; NIK 16 digit.', by: ['UNIQUE email / nik_ktp', 'ux_employee_candidate', 'satu lamaran per lowongan'],
+    d: 'Satu kandidat hanya bisa melamar sekali per lowongan dan hanya bisa menjadi satu record karyawan.' },
+  { cls: 'p', t: 'Satu hasil DISC per lamaran', s: 'Tes ulang tetap bisa bila NO_SHOW.', by: ['ux_disc_completed'],
+    d: 'Hanya satu hasil DISC berstatus COMPLETED untuk setiap lamaran.' },
+  { cls: 'p', t: 'Satu kuesioner terkirim per lamaran', s: 'Kirim ulang bisa setelah EXPIRED.', by: ['ux_screening_submitted', 'ck_screening_submitted', 'ck_screening_deadline', 'ck_question_options'],
+    d: 'Kuesioner SUBMITTED wajib punya waktu kirim dan pernyataan jawaban ditulis sendiri. Batas waktu harus setelah waktu kirim. Soal pilihan wajib punya opsi, soal cerita tidak.' },
+  { cls: 't', t: 'Lamaran gugur otomatis tertutup', s: 'Tanpa ubah status manual.', by: ['trg_application_stage_log_sync'],
+    d: 'Hasil FAILED di tahap mana pun langsung mengubah status lamaran menjadi REJECTED.' },
+];
+
+const STATUSES = [
+  { col: 'application.status', items: [
+    ['p', 'IN_PROGRESS', 'Sedang mengikuti tahapan seleksi.'], ['a', 'ON_HOLD', 'Ditunda sementara, misalnya posisi dibekukan.'],
+    ['r', 'REJECTED', 'Gugur di salah satu tahap (otomatis dari hasil FAILED).'], ['g', 'WITHDRAWN', 'Kandidat mundur atau menolak kontrak.'],
+    ['t', 'HIRED', 'Diterima dan sudah menjadi karyawan.'] ] },
+  { col: 'employee.status', items: [
+    ['a', 'PROBATION', 'Masa percobaan, khusus PKWTT.'], ['t', 'CONTRACT', 'Karyawan kontrak (PKWT).'], ['t', 'PERMANENT', 'Karyawan tetap, sudah ada SK.'],
+    ['g', 'RESIGNED', 'Mengundurkan diri.'], ['r', 'TERMINATED', 'Tidak lulus masa percobaan atau diberhentikan.'] ] },
+  { col: 'application_stage_log.result', items: [
+    ['g', 'PENDING', 'Tahap sedang berjalan.'], ['t', 'PASSED', 'Lolos, lanjut ke tahap berikutnya.'], ['r', 'FAILED', 'Tidak lolos; lamaran otomatis REJECTED.'],
+    ['g', 'SKIPPED', 'Tahap opsional dilewati, misalnya cek referensi.'], ['a', 'HOLD', 'Keputusan ditunda.'] ] },
+  { col: 'screening_response.status', items: [
+    ['g', 'SENT', 'Link kuesioner sudah dikirim.'], ['p', 'IN_PROGRESS', 'Kandidat mulai mengisi.'], ['t', 'SUBMITTED', 'Jawaban terkirim lengkap.'],
+    ['a', 'EXPIRED', 'Lewat batas 2 × 24 jam; HRD boleh mengirim ulang.'], ['r', 'CANCELLED', 'Kiriman dibatalkan.'] ] },
+];
+
+const AUTOS = [
+  { n: 'trg_application_stage_log_sync', s: 'Hasil tahap dicatat → tahap terkini ikut berubah.', d: 'Setiap baris application_stage_log memperbarui application.current_stage_id (tahap dengan urutan tertinggi). Hasil FAILED mengubah status menjadi REJECTED.' },
+  { n: 'trg_employee_status_history_apply', s: 'SK dicatat → status karyawan ikut berubah.', d: 'Insert ke employee_status_history memperbarui employee.status dan permanent_date.' },
+  { n: 'Checklist onboarding', s: '11 tugas otomatis dari template.', d: 'onb', mono: false },
+];
+
+// 14 view di kedua file SQL; t = tabel yang digabung
+const VIEWS = [
+  { g: 'Laporan proses', n: 'v_application_progress', s: 'Posisi terkini setiap pelamar dan sudah berapa hari dalam proses.',
+    t: ['application', 'candidate', 'job_vacancy', 'recruitment_stage'] },
+  { g: 'Laporan proses', n: 'v_recruitment_funnel', s: 'Jumlah pelamar yang masuk, lolos, dan gugur di setiap tahap, per lowongan.',
+    t: ['job_vacancy', 'recruitment_stage', 'application', 'application_stage_log'] },
+  { g: 'Laporan proses', n: 'v_screening_result', s: 'Hasil kuesioner per kandidat: skor pilihan situasi (maks. 24), rata-rata skor AI terbaru, rekomendasi dan tanda AI, skor akhir HRD, dan hasil tahap 4.',
+    t: ['screening_response', 'application', 'candidate', 'job_vacancy', 'job_field', 'screening_answer', 'screening_question', 'screening_ai_review', 'application_stage_log'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_requisition_status', s: 'FPTK beserta keputusan approval level 1–3, siapa yang sedang ditunggu, dan jumlah lowongan yang dibuka.',
+    t: ['manpower_requisition', 'department', 'job_position', 'employee', 'requisition_approval', 'job_vacancy'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_vacancy_summary', s: 'Lowongan beserta asal FPTK, jabatan, departemen, bidang, jumlah dan biaya media iklan, serta jumlah pelamar, yang masih diproses, dan yang diterima.',
+    t: ['job_vacancy', 'manpower_requisition', 'job_position', 'department', 'job_field', 'job_vacancy_channel', 'application'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_candidate_profile', s: 'Profil kandidat: jumlah pengalaman, perusahaan terakhir, ada tidaknya CV, dokumen terverifikasi, jumlah lamaran, dan NIK karyawan bila sudah diterima.',
+    t: ['candidate', 'candidate_experience', 'candidate_document', 'application', 'employee'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_application_detail', s: 'Lamaran lengkap: kandidat, lowongan, jabatan, departemen, bidang, tahap terkini, sumber info, dan karyawan yang mereferensikan.',
+    t: ['application', 'candidate', 'job_vacancy', 'manpower_requisition', 'job_position', 'department', 'job_field', 'recruitment_stage', 'employee'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_stage_history', s: 'Jejak setiap tahap per lamaran: hasil, penilai, lama proses, dan tanda melewati target hari. Tahap yang masih berjalan dihitung sampai hari ini.',
+    t: ['application_stage_log', 'application', 'candidate', 'job_vacancy', 'recruitment_stage', 'employee'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_interview_detail', s: 'Wawancara HRD dan user beserta jumlah pewawancara, rata-rata nilai kompetensi, sikap, dan budaya, serta suara hire / no hire.',
+    t: ['interview', 'application', 'candidate', 'job_vacancy', 'recruitment_stage', 'interview_panel'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_selection_summary', s: 'Satu baris per kandidat untuk tahap 4–8: kuesioner, wawancara HRD, DISC dibanding profil ideal, wawancara user, dan cek referensi. Bahan rapat keputusan hire / no hire.',
+    t: ['application', 'candidate', 'job_vacancy', 'job_position', 'application_stage_log', 'screening_response', 'interview', 'interview_panel', 'disc_assessment', 'reference_check'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_employee_detail', s: 'Karyawan beserta departemen, jabatan, atasan, asal lamaran dan lowongan, serta kontrak aktif (tanpa gaji).',
+    t: ['employee', 'department', 'job_position', 'application', 'job_vacancy', 'employment_contract'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_onboarding_progress', s: 'Kemajuan checklist onboarding per karyawan baru: total tugas, selesai, terlambat, jatuh tempo berikutnya, dan persen selesai.',
+    t: ['employee', 'department', 'onboarding_task'] },
+  { g: 'Gabungan relasi antar tabel', n: 'v_probation_progress', s: 'Karyawan PKWTT yang masih masa percobaan: sisa hari, nilai bulan 1–3, dan rekomendasi terakhir atasan.',
+    t: ['employee', 'department', 'employment_contract', 'probation_review'] },
+  { g: 'Daftar relasi', n: 'v_table_relations', s: 'Daftar 50 relasi foreign key di schema hr (PostgreSQL) atau dbo (SQL Server): tabel anak, kolom FK, tabel induk, dan aksi saat data induk dihapus. Isinya sama dengan diagram di layar Database.',
+    t: [] },
+];
+
+const GANTT = [
+  { lbl: '1', name: 'FPTK', s: 0, d: 3, cls: 'g', st: 1 },
+  { lbl: '2–3', name: 'Lowongan & lamaran', s: 3, d: 14, cls: 'p', st: 2 },
+  { lbl: '4', name: 'Seleksi adm. & kuesioner', s: 17, d: 5, cls: 'p', st: 4 },
+  { lbl: '5', name: 'Wawancara HRD', s: 22, d: 3, cls: 'p', st: 5 },
+  { lbl: '6', name: 'Tes DISC', s: 25, d: 3, cls: 'p', st: 6 },
+  { lbl: '7', name: 'Wawancara user', s: 28, d: 5, cls: 'p', st: 7 },
+  { lbl: '8', name: 'Cek referensi*', s: 33, d: 3, cls: 'p', st: 8, opt: true },
+  { lbl: '9', name: 'Pemberkasan & kontrak', s: 36, d: 5, cls: 't', st: 9 },
+  { lbl: '10', name: 'Onboarding', s: 41, d: 14, cls: 't', st: 10 },
+  { lbl: '11', name: 'Masa percobaan', s: 41, d: 90, cls: 't', st: 11, inside: '90 hari (3 bulan)' },
+  { lbl: '12', name: 'SK karyawan tetap', s: 131, d: 3, cls: 't', st: 12 },
+];
+
+const DISKUSI = [
+  { t: 'Validasi bank soal', q: 'Siapa yang memvalidasi 28 soal kuesioner dan kunci skornya?',
+    now: 'Bank soal masih draf. Usulan: uji coba ke karyawan yang sudah ada, lalu kunci skor disetujui HRD dan user di setiap bidang.' },
+  { t: 'Layanan AI', q: 'Layanan AI apa yang dipakai, dan di mana datanya diproses?',
+    now: 'Database sudah mencatat model dan versi rubrik. Data dikirim tanpa identitas, tetapi aturan transfer data ke luar negeri di UU PDP tetap perlu dicek.' },
+  { t: 'DISC boleh menggugurkan?', q: 'Apakah hasil DISC boleh menjadi alasan gugur?',
+    now: 'Saat ini sistem mengizinkan HRD memberi hasil FAILED di tahap 6.' },
+  { t: 'Pelaksanaan tes DISC', q: 'Pakai aplikasi DISC internal atau vendor? Siapa yang membaca hasilnya?',
+    now: 'Hasil lengkap dari aplikasi tes bisa disimpan di disc_assessment.result_detail.' },
+  { t: 'Profil DISC ideal', q: 'Siapa yang menetapkan profil DISC ideal setiap jabatan?',
+    now: 'Disimpan di job_position.ideal_disc_profile, misalnya DI atau SC.' },
+  { t: 'Cek referensi', q: 'Untuk level jabatan apa cek referensi wajib dilakukan?',
+    now: 'Saat ini opsional; bila dilewati dicatat SKIPPED.' },
+  { t: 'Jenjang persetujuan FPTK', q: 'Siapa approver di setiap level, dan kapan perlu direksi?',
+    now: 'Rancangan saat ini 3 level: kepala departemen, HR manager, direksi (requisition_approval.approval_level).' },
+  { t: 'Target waktu', q: 'Apakah ± 41 hari sampai mulai kerja sudah realistis?',
+    now: 'Tahap 4 naik dari 3 menjadi 5 hari karena ada waktu pengisian kuesioner. Rincian per tahap ada di layar Waktu.' },
+  { t: 'Kandidat yang gugur', q: 'Boleh melamar lagi setelah berapa lama? Kapan masuk daftar hitam?',
+    now: 'Penanda daftar hitam sudah ada di candidate.is_blacklisted; aturan jeda melamar ulang belum ditentukan.' },
+];
+
+const NEXT_STEPS = [
+  'Finalisasi alur dan target waktu dari hasil diskusi ini',
+  'Pasang database (script PostgreSQL / SQL Server sudah siap)',
+  'Buat form input untuk HRD: FPTK, lowongan, lamaran, penilaian',
+  'Uji coba bank soal ke karyawan yang sudah ada untuk menyetel kunci skor',
+  'Hubungkan hasil tes DISC ke database rekrutmen',
+  'Aktifkan laporan funnel rekrutmen per lowongan',
+  'Uji coba pada satu lowongan sebelum dipakai penuh',
+];
+
+// =============================================================================
+// UTIL
+// =============================================================================
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const h = (tag, attrs = {}, html = '') => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') el.className = v; else if (k === 'style') el.style.cssText = v; else el.setAttribute(k, v);
+  }
+  el.innerHTML = html;
+  return el;
+};
+const codes = arr => arr.map(t => `<code>${t}</code>`).join(' ');
+const phaseCls = ph => PHASES.find(p => p.key === ph).cls;
+
+function stagePop(s) {
+  let extra = '';
+  if (s.extra === 'disc') extra = '<p class="hint"><b>D</b> Dominance: tegas, berorientasi hasil · <b>I</b> Influence: komunikatif · <b>S</b> Steadiness: sabar, kerja tim · <b>C</b> Compliance: teliti, taat standar</p>';
+  if (s.extra === 'onb') extra = '<p class="hint">Checklist otomatis 11 tugas: ' + ONBOARDING.map(o => `${o[0]} ${o[1]}`).join(' · ') + '</p>';
+  if (s.go) extra += `<p class="hint">Klik untuk membuka layar ${s.go === 3 ? 'Lamaran' : 'Kuesioner'}.</p>`;
+  return `<h4>Tahap ${s.n} · ${esc(s.name)}</h4>${s.note || s.opt ? `<div class="sub">${s.opt ? 'opsional, tergantung posisi' : s.note}</div>` : ''}
+    <dl><dt>Kegiatan</dt><dd>${esc(s.act)}</dd><dt>Penanggung jawab</dt><dd>${esc(s.pic)}</dd>
+    <dt>Output</dt><dd>${esc(s.out)}</dd><dt>Target</dt><dd><b>${s.sla}</b></dd><dt>Tabel</dt><dd class="tbls">${codes(s.tb)}</dd></dl>${extra}`;
+}
+
+function soalPop(q) {
+  const typeLbl = q.type === 'SCENARIO' ? 'Pilihan situasi' : 'Cerita pengalaman';
+  let body = `<h4>${q.code} · ${esc(SOAL_TITLE[q.code] || '')}</h4><div class="sub">${typeLbl} · ${DIMS[q.dim].label} · minimal ${q.min} karakter ${q.type === 'SCENARIO' ? 'untuk alasan' : ''}</div><p>${esc(q.q)}</p>`;
+  if (q.opts) body += q.opts.map(o => `<div class="opt"><i>${o.key}</i><span>${esc(o.text)}</span><em class="sc s${o.score}">${o.score}</em></div>`).join('');
+  body += `<p class="hint"><b>Yang dinilai:</b> ${esc(q.rubric)}</p>`;
+  return body;
+}
+
+// =============================================================================
+// RENDER LAYAR
+// =============================================================================
+function renderPhases() {
+  const wrap = $('#phases');
+  PHASES.forEach(p => {
+    const col = h('div', { class: `ph ${p.cls}` }, `<header><b>${p.name}</b><span>${p.range}</span></header><div class="list"></div>`);
+    STAGES.filter(s => s.ph === p.key).forEach(s => {
+      const card = h('div', { class: `stc ${p.cls}${s.opt ? ' opt' : ''}`, tabindex: '0' },
+        `<i>${s.n}</i><div>${esc(s.name)}<small>${s.sla}${s.note ? ' · ' + s.note : ''}${s.opt ? ' · opsional' : ''}</small></div>`);
+      card.dataset.pop = '';
+      card._pop = () => stagePop(s);
+      if (s.go) card.dataset.go = s.go;
+      $('.list', col).appendChild(card);
+    });
+    wrap.appendChild(col);
+  });
+  // node diagram seleksi memakai data tahap yang sama
+  document.querySelectorAll('.nd[data-stage]').forEach(nd => {
+    const s = STAGES.find(x => x.n === +nd.dataset.stage);
+    nd.dataset.pop = '';
+    nd._pop = () => stagePop(s);
+  });
+}
+
+function renderFormSteps() {
+  const wrap = $('#steps6');
+  FORM_STEPS.forEach(f => {
+    const card = h('div', { class: 'fs p', tabindex: '0' },
+      `<div class="no">${f.n}</div><b>${f.name}</b><p>${f.sum}</p><div class="tbls">${codes(f.tb)}</div>`);
+    card.dataset.pop = '';
+    card._pop = () => `<h4>Langkah ${f.n} · ${f.name}</h4><div class="sub">Tanda * = wajib diisi</div>
+      <ul>${f.fields.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <dl><dt>Disimpan di</dt><dd class="tbls">${codes(f.tb)}</dd><dt>Aturan</dt><dd>${esc(f.rule)}</dd></dl>`;
+    wrap.appendChild(card);
+  });
+}
+
+function renderKuesionerChips() {
+  const fc = $('#fieldChips');
+  FIELDS.forEach(f => {
+    const qs = SOAL.filter(q => q.field === f.id);
+    const chip = h('span', { class: 'pill p', tabindex: '0' }, esc(f.name));
+    chip.dataset.pop = ''; chip.dataset.go = 6; chip.dataset.field = f.id;
+    chip._pop = () => `<h4>${esc(f.name)}</h4><div class="sub">Contoh jabatan: ${f.jobs}</div>
+      <ol>${qs.map(q => `<li><code>${q.code}</code> ${esc(SOAL_TITLE[q.code])} · <span style="color:#888780">${DIMS[q.dim].label}</span></li>`).join('')}</ol>
+      <p class="hint">Ditambah 4 soal umum. Klik untuk membuka bank soal bidang ini.</p>`;
+    fc.appendChild(chip);
+  });
+  const dc = $('#dimChips');
+  Object.entries(DIMS).forEach(([k, d]) => {
+    const qs = SOAL.filter(q => q.dim === k);
+    const chip = h('span', { class: 'pill g', tabindex: '0' }, esc(d.label));
+    chip.dataset.pop = '';
+    chip._pop = () => `<h4>${esc(d.label)}</h4><p>${esc(d.desc)}</p>
+      <div class="sub">Diukur oleh ${qs.length} soal:</div><p class="tbls">${qs.map(q => `<code>${q.code}</code>`).join(' ')}</p>
+      <p class="hint">Setiap paket kandidat (umum + bidang) mencakup keenam dimensi. AI memberi skor 1–5 per dimensi dengan kutipan jawaban sebagai bukti.</p>`;
+    dc.appendChild(chip);
+  });
+}
+
+let curField = 1;
+function renderBank() {
+  const tabs = $('#ftabs');
+  FIELDS.forEach(f => {
+    const b = h('button', { type: 'button' }, esc(f.name));
+    b.dataset.field = f.id;
+    b.addEventListener('click', () => { curField = f.id; drawBank(); });
+    tabs.appendChild(b);
+  });
+  drawBank();
+}
+function qCard(q, umum) {
+  const card = h('div', { class: 'qcard' + (umum ? ' umum' : ''), tabindex: '0' },
+    `<div class="h"><code>${q.code}</code><span class="ty">${q.type === 'SCENARIO' ? 'Pilihan situasi' : 'Cerita'}</span></div>
+     <b>${esc(SOAL_TITLE[q.code])}</b><span class="dm">${DIMS[q.dim].label}</span>`);
+  card.dataset.pop = '';
+  card._pop = () => soalPop(q);
+  return card;
+}
+function drawBank() {
+  document.querySelectorAll('#ftabs button').forEach(b => b.classList.toggle('on', +b.dataset.field === curField));
+  const f = FIELDS.find(x => x.id === curField);
+  $('#qJobs').textContent = `${f.name} · contoh jabatan: ${f.jobs}`;
+  const u = $('#qUmum'); u.innerHTML = '';
+  SOAL.filter(q => q.field === null).forEach(q => u.appendChild(qCard(q, true)));
+  u.appendChild(h('div', { class: 'scorebox' }, `<b>Cara membaca skor</b>
+    Pilihan situasi: skor kunci <span class="sc s4">4</span><span class="sc s3">3</span><span class="sc s2">2</span><span class="sc s1">1</span>, 6 soal, maks. 24.
+    AI memberi skor 1–5 per dimensi dengan kutipan bukti; HRD boleh mengubahnya.`));
+  const b = $('#qBidang'); b.innerHTML = '';
+  SOAL.filter(q => q.field === curField).forEach(q => b.appendChild(qCard(q, false)));
+  bindPops($('#qUmum').parentElement);
+}
+
+// --- ERD ---------------------------------------------------------------------
+const E = { X0: 40, W: 160, G: 48, Y0: 40, RH: 40, CH: 28, BAND: 244, LANE: 6, BAR_Y: 300, BAR_H: 34 };
+const colX = c => E.X0 + c * (E.W + E.G);
+const showCat = { utama: true, ref: false, ptg: false };
+const erdEls = {};
+
+function renderErd() {
+  const erd = $('#erd');
+  ERD_COLS.forEach((c, i) => {
+    erd.appendChild(h('div', { class: `eh ${c.cls}`, style: `left:${colX(i)}px;top:0;width:${E.W}px` }, `${c.name}${c.sub ? `<span>${c.sub}</span>` : ''}`));
+  });
+  for (const [name, t] of Object.entries(TABLES)) {
+    let el;
+    if (t.bar) {
+      el = h('div', { class: 'ebar', style: `left:${E.X0}px;top:${E.BAR_Y}px;width:${colX(5) + E.W - E.X0}px;height:${E.BAR_H}px`, tabindex: '0' },
+        `<code>employee</code><span>karyawan · data master yang dipakai di semua tahap: approver, pewawancara, reviewer, dan karyawan baru hasil rekrutmen</span>`);
+    } else {
+      el = h('div', { class: `et ${ERD_COLS[t.c].cls}`, style: `left:${colX(t.c)}px;top:${E.Y0 + t.r * E.RH}px;width:${E.W}px`, tabindex: '0' }, name);
+    }
+    el.dataset.pop = '';
+    el.dataset.table = name;
+    el._pop = () => tablePop(name);
+    el.addEventListener('mouseenter', () => focusTable(name));
+    el.addEventListener('focus', () => focusTable(name));
+    el.addEventListener('mouseleave', () => focusTable(null));
+    el.addEventListener('blur', () => focusTable(null));
+    erdEls[name] = el;
+    erd.appendChild(el);
+  }
+  erd.appendChild(h('div', { class: 'erd-leg', id: 'erdLeg' }));
+  document.querySelectorAll('.erd-ctl button[data-cat]').forEach(b => b.addEventListener('click', () => {
+    showCat[b.dataset.cat] = !showCat[b.dataset.cat];
+    b.classList.toggle('on', showCat[b.dataset.cat]);
+    drawRels();
+  }));
+  drawRels();
+}
+
+function tablePop(name) {
+  const t = TABLES[name];
+  const rels = RELS.filter(r => r[0] === name || r[1] === name);
+  const up = rels.filter(r => r[1] === name), down = rels.filter(r => r[0] === name);
+  // relasi ke tabel yang sama digabung, mis. employment_contract (employee_id, company_signatory_id)
+  const group = (list, idx) => {
+    const m = new Map();
+    list.forEach(r => { const o = r[idx]; if (!m.has(o)) m.set(o, { o, col: PCOLOR[r[0]], fks: [] }); m.get(o).fks.push(r[2]); });
+    return [...m.values()];
+  };
+  const line = g => `<div class="rl"><i style="background:${g.col}"></i><code>${g.o}</code><span style="color:#888780">· ${g.fks.join(', ')}</span></div>`;
+  const K = KAMUS[name];
+  // kolom penting beserta artinya dalam Bahasa Indonesia (dari KAMUS)
+  const arti = n => { const c = K && K.c.find(x => x.n === n); return c ? c.a : ''; };
+  const penting = t.k.split(',').map(s => s.trim()).filter(Boolean).map(n => {
+    // singkatan seperti salary_min/max atau score_d/i/s/c -> arti setiap kolom
+    const base = n.includes('/') ? n.slice(0, n.lastIndexOf('_', n.indexOf('/')) + 1) : '';
+    const a = base ? n.slice(base.length).split('/').map(p => arti(base + p)).filter(Boolean).join(' / ') : arti(n);
+    return `<code>${n}</code><span>${esc(a)}</span>`;
+  }).join('');
+  return `<div class="dockg"><div><h4>${K ? esc(K.l) + ' ' : ''}<code style="color:inherit">${name}</code></h4><p>${esc(t.d)}</p>
+      <div class="sub" style="margin-bottom:0">Kolom penting:</div><div class="kp">${penting}</div>
+      <div class="hint">Klik tabel untuk melihat struktur ${K ? K.c.length + ' ' : ''}kolomnya dalam Bahasa Indonesia (layar Kamus data).</div></div>
+    <div>${up.length ? `<div class="sub" style="margin:0 0 2px">Merujuk ke (induk):</div><div class="rls">${group(up, 0).map(line).join('')}</div>` : ''}
+      ${down.length ? `<div class="sub" style="margin:4px 0 2px">Dirujuk oleh (anak) · ${down.length} relasi:</div><div class="rls">${group(down, 1).map(line).join('')}</div>` : ''}</div></div>`;
+}
+
+function route(rels) {
+  // Garis dibuat siku: lewat celah antarkolom, relasi jauh lewat jalur di bawah tabel
+  const plan = rels.map(r => {
+    const P = TABLES[r[0]], C = TABLES[r[1]];
+    if (P.bar || C.bar) return { r, kind: 'bar', t: P.bar ? r[1] : r[0], side: 'L', gap: TABLES[P.bar ? r[1] : r[0]].c };
+    if (P.c === C.c) return { r, kind: 'same', gap: P.c };
+    if (C.c === P.c + 1) return { r, kind: 'adj', gap: C.c };
+    return { r, kind: 'far', gap1: P.c + 1, gap2: C.c };
+  });
+  // hitung jumlah garis per celah dan per sisi kartu
+  const gapN = Array(7).fill(0), port = {};
+  const addPort = (t, side) => { const k = t + side; port[k] = (port[k] || 0) + 1; };
+  plan.forEach(p => {
+    if (p.kind === 'far') { gapN[p.gap1]++; gapN[p.gap2]++; addPort(p.r[0], 'R'); addPort(p.r[1], 'L'); }
+    else if (p.kind === 'bar') { gapN[p.gap]++; addPort(p.t, 'L'); }
+    else if (p.kind === 'same') { gapN[p.gap]++; addPort(p.r[0], 'L'); addPort(p.r[1], 'L'); }
+    else { gapN[p.gap]++; addPort(p.r[0], 'R'); addPort(p.r[1], 'L'); }
+  });
+  const gapI = Array(7).fill(0), portI = {};
+  const gx = g => { const n = gapN[g], sp = Math.min(5, (E.G - 14) / Math.max(1, n - 1)); return colX(g) - 7 - sp * gapI[g]++; };
+  const py = (t, side) => {
+    const k = t + side, n = port[k], i = portI[k] = (portI[k] ?? -1) + 1;
+    return E.Y0 + TABLES[t].r * E.RH + E.CH / 2 + (i - (n - 1) / 2) * Math.min(5, 20 / Math.max(1, n - 1));
+  };
+  let lane = 0;
+  return plan.map(p => {
+    let pts;
+    if (p.kind === 'bar') {
+      const x = gx(p.gap), y = py(p.t, 'L');
+      pts = [[colX(TABLES[p.t].c), y], [x, y], [x, E.BAR_Y]];
+    } else if (p.kind === 'same') {
+      const x = gx(p.gap), y1 = py(p.r[0], 'L'), y2 = py(p.r[1], 'L'), cx = colX(p.gap);
+      pts = [[cx, y1], [x, y1], [x, y2], [cx, y2]];
+    } else if (p.kind === 'adj') {
+      const x = gx(p.gap), y1 = py(p.r[0], 'R'), y2 = py(p.r[1], 'L');
+      pts = [[colX(TABLES[p.r[0]].c) + E.W, y1], [x, y1], [x, y2], [colX(p.gap), y2]];
+    } else {
+      const x1 = gx(p.gap1), x2 = gx(p.gap2), y1 = py(p.r[0], 'R'), y2 = py(p.r[1], 'L'), ly = E.BAND + E.LANE * lane++;
+      pts = [[colX(TABLES[p.r[0]].c) + E.W, y1], [x1, y1], [x1, ly], [x2, ly], [x2, y2], [colX(p.gap2), y2]];
+    }
+    return { r: p.r, pts };
+  });
+}
+
+function drawRels(focus = null) {
+  const svg = $('#erdSvg');
+  const rels = focus ? RELS.filter(r => r[0] === focus || r[1] === focus) : RELS.filter(r => showCat[r[3]]);
+  const ns = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '';
+  route(rels).forEach(({ r, pts }) => {
+    const col = PCOLOR[r[0]];
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', 'M' + pts.map(p => p.map(v => Math.round(v * 10) / 10).join(' ')).join(' L'));
+    path.setAttribute('class', 'rp');
+    path.setAttribute('stroke', col);
+    if (r[3] !== 'utama') path.setAttribute('stroke-dasharray', r[3] === 'ref' ? '6 4' : '2 3');
+    svg.appendChild(path);
+    // titik kecil di ujung anak (kolom FK)
+    const end = r[1] === 'employee' ? pts[pts.length - 1] : (TABLES[r[0]].bar ? pts[0] : pts[pts.length - 1]);
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', end[0]); dot.setAttribute('cy', end[1]); dot.setAttribute('r', 3.2); dot.setAttribute('fill', col);
+    svg.appendChild(dot);
+  });
+  // legenda warna = tabel induk yang garisnya tampil
+  const parents = [...new Set(rels.map(r => r[0]))];
+  $('#erdLeg').innerHTML = `<b>Warna garis = tabel induk:</b>` + parents.map(p => `<span><i style="background:${PCOLOR[p]}"></i>${p}</span>`).join('')
+    + `<span style="font-family:inherit;color:#888780">· garis penuh = utama, putus-putus = referensi, titik-titik = petugas · ● = sisi tabel anak</span>`;
+}
+
+function focusTable(name) {
+  const erd = $('#erd');
+  Object.values(erdEls).forEach(el => { el.classList.remove('hl', 'rel'); el.style.removeProperty('--hc'); });
+  if (!name) { erd.classList.remove('focus'); drawRels(); return; }
+  erd.classList.add('focus');
+  erdEls[name].classList.add('hl');
+  RELS.filter(r => r[0] === name || r[1] === name).forEach(r => {
+    const other = r[0] === name ? r[1] : r[0];
+    if (other === name) return;
+    erdEls[other].classList.add('hl', 'rel');
+    erdEls[other].style.setProperty('--hc', PCOLOR[r[0]]);
+  });
+  drawRels(name);
+}
+
+// --- kamus data (layar Kamus data) ---------------------------------------------------
+const KM_ORDER = ['department', 'job_field', 'job_position', 'employee', 'recruitment_stage',
+  'manpower_requisition', 'requisition_approval', 'job_vacancy', 'job_vacancy_channel',
+  'candidate', 'candidate_experience', 'candidate_document', 'application', 'application_stage_log',
+  'screening_question', 'screening_response', 'screening_answer', 'screening_ai_review',
+  'interview', 'interview_panel', 'disc_assessment', 'reference_check',
+  'employment_contract', 'onboarding_task_template', 'onboarding_task', 'probation_review', 'employee_status_history'];
+const KM_STD = new Set(['statusaktif', 'info', 'modifiedby', 'created_at', 'updated_at']);
+let kmCur = 'application';
+
+function kmCol(name) { const t = TABLES[name]; return t.bar ? ERD_COLS[0] : ERD_COLS[t.c]; }
+function kmGroup(name) { const g = kmCol(name); return g.name + (g.sub ? ' · ' + g.sub : ''); }
+
+// buka layar Kamus data pada tabel tertentu (dari layar Database atau tombol)
+function showKamus(name) {
+  go(SLUGS.indexOf('kamus-data'));
+  openKamus(name);
+}
+
+function openKamus(name) {
+  const K = KAMUS[name];
+  if (!K) return;
+  kmCur = name;
+  const keInduk = RELS.filter(r => r[1] === name).length, keAnak = RELS.filter(r => r[0] === name).length;
+  $('#kmGroup').textContent = kmGroup(name);
+  $('#kmTitle').innerHTML = `${esc(K.l)}<code>${name}</code>`;
+  $('#kmSub').textContent = `${TABLES[name].d} ${K.c.length} kolom · merujuk ${keInduk} kali ke tabel lain · dirujuk ${keAnak} kali oleh tabel lain.`;
+  const list = $('#kmList');
+  list.querySelectorAll('.kd-it').forEach(b => {
+    const on = b.dataset.km === name;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-current', on ? 'true' : 'false');
+    if (!on) return;
+    // geser daftar bila tabel terpilih tidak terlihat (tanpa menggeser stage)
+    const lr = list.getBoundingClientRect(), br = b.getBoundingClientRect();
+    if (br.top < lr.top) list.scrollTop -= (lr.top - br.top) / scale + 4;
+    else if (br.bottom > lr.bottom) list.scrollTop += (br.bottom - lr.bottom) / scale + 4;
+  });
+  $('#kmRows').innerHTML = K.c.map((c, i) => {
+    const tKol = [], tKet = [];
+    if (c.pk) tKol.push('<span class="tag pk">kunci utama</span>');
+    if (c.r) tKol.push(`<span class="tag ref" data-km="${c.r}" title="Buka kamus ${c.r}">→ ${c.r}</span>`);
+    if (c.auto) tKet.push('<span class="tag">otomatis</span>');
+    if (c.u) tKet.push('<span class="tag">unik</span>');
+    if (c.d !== undefined) tKet.push(`<span class="tag">bawaan: ${esc(c.d)}</span>`);
+    if (c.v) tKet.push(`<span class="tag">nilai: ${esc(c.v)}</span>`);
+    if (c.x) tKet.push(`<span class="tag">aturan: ${esc(c.x)}</span>`);
+    return `<tr class="${KM_STD.has(c.n) ? 'umum' : ''}"><td class="no">${i + 1}</td>`
+      + `<td class="kol">${c.n}<div class="tp">${esc(c.t)} ${tKol.join('')}</div></td>`
+      + `<td class="arti">${esc(c.a)}</td><td class="wajib">${c.w ? 'Ya' : '–'}</td>`
+      + `<td>${esc(c.k)} ${tKet.join('')}</td></tr>`;
+  }).join('');
+  $('#kmBody').scrollTop = 0;
+}
+function stepKamus(d) {
+  const i = KM_ORDER.indexOf(kmCur);
+  openKamus(KM_ORDER[(i + d + KM_ORDER.length) % KM_ORDER.length]);
+}
+function initKamus() {
+  // daftar tabel di kiri, dikelompokkan seperti kolom diagram database
+  const list = $('#kmList');
+  let grp = null, box = null;
+  KM_ORDER.forEach(n => {
+    const g = kmCol(n);
+    if (g !== grp) {
+      grp = g;
+      const wrap = h('div', { class: `kd-g ${g.cls}` }, `<b>${g.name}${g.sub ? `<small>${g.sub}</small>` : ''}</b>`);
+      box = h('div');
+      wrap.appendChild(box);
+      list.appendChild(wrap);
+    }
+    const b = h('button', { type: 'button', class: 'kd-it', title: `${KAMUS[n].l} (${n})` },
+      `<span>${esc(KAMUS[n].l)}</span><code>${n}</code><i>${KAMUS[n].c.length}</i>`);
+    b.dataset.km = n;
+    box.appendChild(b);
+  });
+  list.addEventListener('click', e => {
+    const t = e.target.closest('[data-km]');
+    if (t) openKamus(t.dataset.km);
+  });
+  $('#kmRows').addEventListener('click', e => {
+    const t = e.target.closest('[data-km]');
+    if (t) openKamus(t.dataset.km);
+  });
+  $('#kmOpen').addEventListener('click', e => { e.stopPropagation(); showKamus(kmCur); });
+  const nKol = KM_ORDER.reduce((s, n) => s + KAMUS[n].c.length, 0);
+  $('#kdTitle').textContent = `Kamus data: ${KM_ORDER.length} tabel, ${nKol} kolom dalam Bahasa Indonesia`;
+  openKamus(kmCur);
+}
+
+// --- aturan, status, otomatisasi -------------------------------------------------
+function renderRules() {
+  const w = $('#rules');
+  RULES.forEach(r => {
+    const el = h('div', { class: `rule ${r.cls}`, tabindex: '0' }, `<b>${r.t}</b><span>${r.s}</span>`);
+    el.dataset.pop = '';
+    el._pop = () => `<h4>${r.t}</h4><p>${esc(r.d)}</p><div class="sub">Dijaga oleh:</div><p class="tbls">${codes(r.by)}</p>`;
+    w.appendChild(el);
+  });
+  const s = $('#statuses');
+  STATUSES.forEach(g => {
+    const grp = h('div', { class: 'stg' }, `<small>${g.col}</small>`);
+    g.items.forEach(([cls, code, d]) => {
+      const c = h('span', { class: `chip ${cls}`, tabindex: '0' }, code);
+      c.dataset.pop = '';
+      c._pop = () => `<h4><code style="color:inherit">${code}</code></h4><div class="sub">${g.col}</div><p>${esc(d)}</p>`;
+      grp.appendChild(c);
+    });
+    s.appendChild(grp);
+  });
+  const a = $('#autos');
+  AUTOS.forEach(x => {
+    const el = h('div', { class: 'auto', tabindex: '0' }, `${x.mono === false ? `<b style="font-size:13px">${x.n}</b>` : `<code>${x.n}</code>`}<span>${x.s}</span>`);
+    el.dataset.pop = '';
+    el._pop = () => x.d === 'onb'
+      ? `<h4>Checklist onboarding (11 tugas)</h4><div class="sub">Dari onboarding_task_template, relatif terhadap tanggal masuk</div>${ONBOARDING.map(o => `<div class="opt"><i style="width:44px">${o[0]}</i><span>${o[1]}</span><span style="flex:none;color:#888780">${o[2]}</span></div>`).join('')}`
+      : `<h4><code style="color:inherit">${x.n}</code></h4><p>${esc(x.d)}</p>`;
+    a.appendChild(el);
+  });
+  const vw = $('#views');
+  [...new Set(VIEWS.map(v => v.g))].forEach(g => {
+    vw.appendChild(h('div', { class: 'vgl' }, g));
+    const box = h('div', { class: 'vchips' });
+    VIEWS.filter(v => v.g === g).forEach(v => {
+      const c = h('span', { class: 'vchip', tabindex: '0' }, v.n);
+      c.dataset.pop = '';
+      if (!v.t.length) c.dataset.go = 7;       // daftar relasi: klik untuk membuka diagram
+      c._pop = () => `<h4><code style="color:inherit">${v.n}</code></h4><div class="sub">${g}</div><p>${esc(v.s)}</p>`
+        + (v.t.length
+          ? `<div class="sub">Menggabungkan ${v.t.length} tabel:</div><p class="tbls">${codes(v.t)}</p>`
+          : `<p class="hint">Dibaca dari katalog database (pg_constraint / sys.foreign_keys). Klik untuk membuka diagram relasi.</p>`);
+      box.appendChild(c);
+    });
+    vw.appendChild(box);
+  });
+}
+
+// --- gantt ----------------------------------------------------------------------
+function renderGantt() {
+  const PX = 6, g = $('#gantt');
+  const grid = h('div', { class: 'gridl', style: `height:${GANTT.length * 30}px` },
+    [0, 30, 60, 90, 120, 150].map(d => `<i style="left:${d * PX}px"></i>`).join('') +
+    `<i class="ms" style="left:${41 * PX}px"></i><i class="ms" style="left:${134 * PX}px"></i>` +
+    `<span class="mslbl" style="left:${41 * PX}px">Hari ke-41: mulai kerja</span><span class="mslbl" style="left:${134 * PX}px">Hari ke-134: karyawan tetap</span>`);
+  g.appendChild(grid);
+  GANTT.forEach(b => {
+    const row = h('div', { class: 'row' }, `<div class="lbl"><b>${b.lbl}</b>${b.name}</div><div class="track"></div>`);
+    const bar = h('div', { class: `bar ${b.cls}${b.opt ? ' opt' : ''}`, style: `left:${b.s * PX}px;width:${b.d * PX}px`, tabindex: '0' },
+      b.inside ? `<em class="in">${b.inside}</em>` : `<em>${b.d} hr</em>`);
+    const s = STAGES.find(x => x.n === b.st);
+    bar.dataset.pop = '';
+    bar._pop = () => `<h4>${b.lbl === '2–3' ? 'Tahap 2–3 · Lowongan & lamaran' : `Tahap ${s.n} · ${esc(s.name)}`}</h4>
+      <div class="sub">Hari ke-${b.s} sampai ${b.s + b.d} · ${b.d} hari${b.opt ? ' · opsional' : ''}</div>
+      <dl><dt>Penanggung jawab</dt><dd>${esc(s.pic)}</dd><dt>Output</dt><dd>${esc(s.out)}</dd></dl>
+      ${b.st === 2 ? '<p class="hint">Lamaran (tahap 3) diterima bersamaan dengan masa tayang lowongan.</p>' : ''}
+      ${b.st === 4 ? '<p class="hint">Naik dari 3 menjadi 5 hari karena kandidat diberi waktu 2 × 24 jam untuk mengisi kuesioner.</p>' : ''}
+      ${b.st === 10 ? '<p class="hint">Karyawan PKWT selesai di sini (hari ke-55) dengan status CONTRACT.</p>' : ''}`;
+    $('.track', row).appendChild(bar);
+    g.appendChild(row);
+  });
+  g.appendChild(h('div', { class: 'axis' }, [0, 30, 60, 90, 120, 150].map(d => `<span style="left:${d * PX}px">${d}</span>`).join('') +
+    '<span style="left:-244px;transform:none">Hari ke-</span>'));
+}
+
+function renderDiskusi() {
+  const w = $('#dq');
+  DISKUSI.forEach((d, i) => {
+    const el = h('div', { class: 'dqc', tabindex: '0' }, `<i>${i + 1}</i><div><b>${d.t}</b><span>${esc(d.q)}</span></div>`);
+    el.dataset.pop = '';
+    el.style.setProperty('--bd', '#854F0B');
+    el._pop = () => `<h4>${i + 1}. ${d.t}</h4><p>${esc(d.q)}</p><div class="sub" style="margin:6px 0 2px">Kondisi saat ini di rancangan:</div><p>${esc(d.now)}</p>`;
+    w.appendChild(el);
+  });
+  $('#nextList').innerHTML = NEXT_STEPS.map(s => `<li>${s}</li>`).join('');
+}
+
+// =============================================================================
+// POPOVER (hover / fokus / klik untuk menahan)
+// =============================================================================
+const stage = $('#stage'), pop = $('#pop');
+let scale = 1, pinned = null;
+
+function popHtml(el) {
+  if (el._pop) return el._pop();
+  const m = el.querySelector(':scope > .more');
+  return m ? m.innerHTML : '';
+}
+function showPop(el) {
+  const html = popHtml(el);
+  if (!html) return;
+  pop.innerHTML = html;
+  const bd = getComputedStyle(el).getPropertyValue('--bd').trim();
+  pop.style.setProperty('--bd', el.dataset.table ? (PCOLOR[el.dataset.table] || '#5F5E5A') : (bd || '#534AB7'));
+  pop.style.setProperty('--tx', getComputedStyle(el).getPropertyValue('--tx').trim() || '#1f2328');
+  pop.classList.toggle('wide', el.hasAttribute('data-wide'));
+  pop.classList.toggle('dock', !!el.dataset.table);
+  pop.classList.add('on');
+  if (el.dataset.table) {                   // tabel database: panel detail di bawah diagram agar garis tetap terlihat
+    pop.style.left = '20px';
+    pop.style.top = (660 - pop.offsetHeight) + 'px';
+    return;
+  }
+  // posisi: kanan kartu, kalau tidak muat ke kiri, kalau tidak muat juga ke bawah
+  const sr = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const L = (r.left - sr.left) / scale, T = (r.top - sr.top) / scale, R = (r.right - sr.left) / scale, B = (r.bottom - sr.top) / scale;
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = R + 12, y = T;
+  if (x + pw > 1268) x = L - pw - 12;
+  if (x < 12) { x = Math.min(Math.max(12, L), 1268 - pw); y = B + 10; if (y + ph > 660) y = T - ph - 10; }
+  y = Math.max(12, Math.min(y, 660 - ph));
+  pop.style.left = x + 'px';
+  pop.style.top = y + 'px';
+}
+function hidePop(force) {
+  if (pinned && !force) return;
+  if (force && pinned) { pinned.classList.remove('pin'); pinned = null; }
+  pop.classList.remove('on');
+}
+function bindPops(root = document) {
+  root.querySelectorAll('[data-pop]').forEach(el => {
+    if (el._bound) return;
+    el._bound = true;
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.addEventListener('mouseenter', () => { if (!pinned) showPop(el); });
+    el.addEventListener('mouseleave', () => hidePop(false));
+    el.addEventListener('focus', () => { if (!pinned) showPop(el); });
+    el.addEventListener('blur', () => hidePop(false));
+    el.addEventListener('click', e => {
+      if (el.dataset.go) return;            // kartu yang membuka layar lain
+      e.stopPropagation();
+      if (el.dataset.table) { showKamus(el.dataset.table); return; }   // tabel database: buka layar Kamus data
+      if (pinned === el) { hidePop(true); return; }
+      if (pinned) pinned.classList.remove('pin');
+      pinned = el; el.classList.add('pin'); showPop(el);
+    });
+  });
+}
+document.addEventListener('click', e => { if (pinned && !pop.contains(e.target)) hidePop(true); });
+
+// =============================================================================
+// NAVIGASI
+// =============================================================================
+const screens = [...document.querySelectorAll('.screen')];
+// nama layar untuk link langsung, mis. ...#database (angka #7 juga diterima)
+const SLUGS = ['sampul', 'alur', 'lamaran', 'seleksi', 'kuesioner', 'bank-soal', 'database', 'kamus-data', 'aturan', 'waktu', 'diskusi'];
+let cur = 0;
+function fromHash() {
+  const key = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+  const i = SLUGS.indexOf(key);
+  if (i >= 0) return i;
+  const n = parseInt(key, 10);
+  return n >= 1 && n <= screens.length ? n - 1 : -1;
+}
+function go(i) {
+  i = Math.max(0, Math.min(screens.length - 1, i));
+  hidePop(true);
+  screens.forEach((s, k) => s.classList.toggle('on', k === i));
+  document.querySelectorAll('#tabs button').forEach((b, k) => b.classList.toggle('on', k === i));
+  $('#pageNo').textContent = `${i + 1} / ${screens.length}`;
+  cur = i;
+  try { history.replaceState(null, '', '#' + SLUGS[i]); } catch (e) { /* penampil bisa menolak perubahan URL */ }
+}
+screens.forEach((s, i) => {
+  const b = h('button', { type: 'button' }, `<b>${i + 1}</b>${s.dataset.tab}`);
+  b.addEventListener('click', () => go(i));
+  $('#tabs').appendChild(b);
+});
+$('#prev').addEventListener('click', () => go(cur - 1));
+$('#next').addEventListener('click', () => go(cur + 1));
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-go]');
+  if (!el) return;
+  if (el.dataset.field) { curField = +el.dataset.field; drawBank(); }
+  go(+el.dataset.go - 1);
+});
+document.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (SLUGS[cur] === 'kamus-data' && ['ArrowUp', 'ArrowDown'].includes(e.key)) {   // layar Kamus data: ↑ ↓ pindah tabel
+    e.preventDefault(); stepKamus(e.key === 'ArrowUp' ? -1 : 1); return;
+  }
+  if (['ArrowRight', 'PageDown'].includes(e.key) || (e.key === ' ' && e.target === document.body)) { e.preventDefault(); go(cur + 1); }
+  else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(screens.length - 1);
+  else if (e.key === 'Escape') hidePop(true);
+  else if (e.key === 'f' || e.key === 'F') {
+    // layar penuh bersifat opsional; sebagian penampil menolaknya
+    const p = document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.();
+    p?.catch?.(() => {});
+  }
+});
+
+addEventListener('hashchange', () => {
+  const i = fromHash();
+  if (i >= 0 && i !== cur) go(i);
+});
+
+function fit() {
+  const W = document.body.clientWidth, H = document.body.clientHeight, M = 16;
+  scale = Math.min((W - 2 * M) / 1280, (H - 2 * M) / 720);
+  stage.style.transform = `translate(${(W - 1280 * scale) / 2}px, ${(H - 720 * scale) / 2}px) scale(${scale})`;
+  $('#rotate').hidden = !(W < H && W < 700);
+  hidePop(true);
+}
+addEventListener('resize', fit);
+
+// =============================================================================
+// MULAI
+// =============================================================================
+renderPhases();
+renderFormSteps();
+renderKuesionerChips();
+renderBank();
+renderErd();
+initKamus();
+renderRules();
+renderGantt();
+renderDiskusi();
+bindPops();
+fit();
+go(Math.max(0, fromHash()));
+</script>
+</body>
+</html>
