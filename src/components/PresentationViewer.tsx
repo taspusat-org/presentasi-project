@@ -146,7 +146,7 @@ export function PresentationViewer({
                             <span className="truncate">{item.title}</span>
                           </span>
                           <span className="shrink-0 font-mono text-[10px] text-zinc-400">
-                            {item.slideCount} slide
+                            {item.countLabel}
                           </span>
                         </button>
                       );
@@ -157,7 +157,7 @@ export function PresentationViewer({
             </div>
 
             <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[11px] text-zinc-400 md:inline-block">
-              {presentation.slideCount} slide • {presentation.sizeLabel}
+              {presentation.countLabel} • {presentation.sizeLabel}
             </span>
           </div>
 

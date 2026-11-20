@@ -8,7 +8,12 @@ export interface PresentationMeta {
   title: string;
   description: string;
   slideCount: number;
-  format: "Interactive Deck" | "Document Deck" | "HTML Showcase";
+  countLabel: string;
+  format:
+    | "Interactive Deck"
+    | "Document Deck"
+    | "Interactive Report"
+    | "HTML Showcase";
   accent: string;
   accentSoft: string;
   sizeBytes: number;
@@ -97,28 +102,42 @@ function extractDescription(html: string): string {
   const cvSub = html.match(/<p[^>]+class=["'][^"']*cv-sub[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
   if (cvSub?.[1]) return stripTags(cvSub[1]);
 
-  const lead = html.match(/<p[^>]+class=["'][^"']*lead[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
+  const lead = html.match(/<p[^>]+class=["'][^"']*\b(?:lead|lede)\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
   if (lead?.[1]) return stripTags(lead[1]);
 
-  const divLead = html.match(/<div[^>]+class=["'][^"']*lead[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+  const divLead = html.match(/<div[^>]+class=["'][^"']*\b(?:lead|lede)\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
   if (divLead?.[1]) return stripTags(divLead[1]);
 
   return "Dokumen presentasi HTML interaktif yang siap ditinjau langsung di browser maupun dicetak ke PDF.";
 }
 
-function detectSlideCount(html: string): number {
+function detectSlideCount(html: string): { count: number; label: string } {
   const screenMatches = html.match(/class=["'][^"']*\bscreen\b[^"']*["']/gi);
-  if (screenMatches && screenMatches.length > 0) return screenMatches.length;
+  if (screenMatches && screenMatches.length > 0) {
+    return { count: screenMatches.length, label: `${screenMatches.length} slide` };
+  }
 
   const slideMatches = html.match(/class=["'][^"']*\bslide\b[^"']*["']/gi);
   const coverMatches = html.match(/class=["'][^"']*\bcover\b[^"']*["']/gi);
   const flowMatches = html.match(/class=["'][^"']*\bflow\b[^"']*["']/gi);
-  const total =
+  const deckTotal =
     (slideMatches?.length ?? 0) +
     (coverMatches?.length ?? 0) +
     (flowMatches?.length ?? 0);
 
-  return total > 0 ? total : 1;
+  if (deckTotal > 0) {
+    return { count: deckTotal, label: `${deckTotal} slide` };
+  }
+
+  const sectionMatches = html.match(/<section\b/gi);
+  if (sectionMatches && sectionMatches.length > 0) {
+    return {
+      count: sectionMatches.length,
+      label: `${sectionMatches.length} bagian`,
+    };
+  }
+
+  return { count: 1, label: "1 halaman" };
 }
 
 function detectFormat(html: string): PresentationMeta["format"] {
@@ -127,6 +146,9 @@ function detectFormat(html: string): PresentationMeta["format"] {
   }
   if (/@page/i.test(html) || /class=["'][^"']*\bslide\b/i.test(html)) {
     return "Document Deck";
+  }
+  if (/<section\b/i.test(html) && /<script\b/i.test(html)) {
+    return "Interactive Report";
   }
   return "HTML Showcase";
 }
@@ -144,11 +166,21 @@ function detectAccent(html: string, index: number): { accent: string; soft: stri
 
 function buildTags(html: string, format: PresentationMeta["format"]): string[] {
   const tags: string[] = [];
-  if (format === "Interactive Deck") tags.push("Interaktif");
+  if (format === "Interactive Deck" || format === "Interactive Report") {
+    tags.push("Interaktif");
+  }
   if (format === "Document Deck") tags.push("Multi-Halaman");
+  if (/role=["']search["']|type=["']search["']/i.test(html)) {
+    tags.push("Filter & Cari");
+  }
+  if (/class=["'][^"']*\bdocflow\b/i.test(html)) {
+    tags.push("Alur Dokumen");
+  }
   if (/@page|@media\s+print/i.test(html)) tags.push("PDF Ready");
-  if (/data-pop|<script/i.test(html)) tags.push("Hover Detail");
-  if (/<svg/i.test(html) || /class=["'][^"']*\bdg\b/i.test(html)) tags.push("Diagram");
+  if (/data-pop/i.test(html)) tags.push("Hover Detail");
+  if (/<svg/i.test(html) || /class=["'][^"']*\bdg\b/i.test(html)) {
+    tags.push("Diagram");
+  }
   return tags.slice(0, 3);
 }
 
@@ -171,7 +203,7 @@ export function getPresentations(): PresentationMeta[] {
 
     const title = extractTitle(html, fileName);
     const description = extractDescription(html);
-    const slideCount = detectSlideCount(html);
+    const { count: slideCount, label: countLabel } = detectSlideCount(html);
     const format = detectFormat(html);
     const { accent, soft } = detectAccent(html, index);
     const tags = buildTags(html, format);
@@ -183,6 +215,7 @@ export function getPresentations(): PresentationMeta[] {
       title,
       description,
       slideCount,
+      countLabel,
       format,
       accent,
       accentSoft: soft,

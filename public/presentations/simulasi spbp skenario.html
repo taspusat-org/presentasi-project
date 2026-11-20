@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulasi Siklus SPBP — 50 Skenario & Status Perbaikan</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg-elev: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-soft: #64748b;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.07);
+      --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.14);
+
+      --pass: #059669;
+      --pass-bg: #ecfdf5;
+      --pass-border: #a7f3d0;
+      --fixed: #2563eb;
+      --fixed-bg: #eff6ff;
+      --fixed-border: #bfdbfe;
+      --open: #e11d48;
+      --open-bg: #fff1f2;
+      --open-border: #fecdd3;
+      --warn: #d97706;
+      --warn-bg: #fffbeb;
+      --warn-border: #fde68a;
+      --accent: #0f172a;
+      --accent-fg: #ffffff;
+      --code-bg: #f1f5f9;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b1120;
+      --bg-elev: #111827;
+      --bg-subtle: #1e293b;
+      --bg-hover: #334155;
+      --text: #f1f5f9;
+      --text-muted: #cbd5e1;
+      --text-soft: #94a3b8;
+      --border: #1e293b;
+      --border-strong: #334155;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.65);
+
+      --pass: #34d399;
+      --pass-bg: rgba(16, 185, 129, 0.12);
+      --pass-border: rgba(52, 211, 153, 0.3);
+      --fixed: #60a5fa;
+      --fixed-bg: rgba(59, 130, 246, 0.14);
+      --fixed-border: rgba(96, 165, 250, 0.32);
+      --open: #fb7185;
+      --open-bg: rgba(244, 63, 94, 0.14);
+      --open-border: rgba(251, 113, 133, 0.35);
+      --warn: #fbbf24;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --warn-border: rgba(251, 191, 36, 0.32);
+      --accent: #3b82f6;
+      --accent-fg: #ffffff;
+      --code-bg: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    code, .mono {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+    }
+    .inline-code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+    }
+
+    /* Sticky Topbar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 60px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #059669);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 6px 0;
+    }
+    .nav-tab {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-tab:hover {
+      background: var(--bg-subtle);
+      color: var(--text);
+    }
+    .nav-tab.active {
+      background: var(--accent);
+      color: var(--accent-fg);
+    }
+    .nav-tab .badge-count {
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: rgba(128,128,128,0.18);
+    }
+    .nav-tab.active .badge-count {
+      background: rgba(255,255,255,0.22);
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 7px 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-subtle);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+    }
+    .tab-panel { display: none; animation: fadeIn 0.2s ease; }
+    .tab-panel.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hero / Meta Bar */
+    .hero-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .hero-desc {
+      color: var(--text-muted);
+      max-width: 780px;
+      font-size: 13.5px;
+    }
+    .meta-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .meta-pill strong { color: var(--text); font-weight: 600; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 820px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+    .kpi-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3.5px;
+      background: var(--kpi-color, var(--text));
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--kpi-color, var(--text));
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-top: 6px;
+    }
+
+    /* Progress bar */
+    .stacked-bar-wrap {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .stacked-bar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stacked-bar {
+      height: 14px;
+      border-radius: 99px;
+      overflow: hidden;
+      display: flex;
+      background: var(--bg-subtle);
+      gap: 2px;
+    }
+    .stacked-seg {
+      height: 100%;
+      transition: opacity 0.15s;
+      cursor: pointer;
+    }
+    .stacked-seg:hover { opacity: 0.82; }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .section-sub {
+      font-size: 12.5px;
+      color: var(--text-soft);
+      font-weight: 400;
+    }
+
+    /* Interactive Pipeline */
+    .pipeline-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .pipeline-nodes {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 6px 2px 12px;
+    }
+    .pipe-node {
+      flex: 1;
+      min-width: 150px;
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      position: relative;
+    }
+    .pipe-node:hover {
+      border-color: var(--fixed);
+      background: var(--bg-elev);
+    }
+    .pipe-node.active {
+      border-color: var(--fixed);
+      background: var(--fixed-bg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--fixed) 15%, transparent);
+    }
+    .pipe-step-num {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fixed);
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .pipe-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .pipe-route {
+      font-size: 11.5px;
+      color: var(--text-soft);
+      line-height: 1.35;
+    }
+    .pipe-arrow {
+      display: flex;
+      align-items: center;
+      color: var(--text-soft);
+      font-size: 16px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .pipe-detail {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .pipe-detail-text { flex: 1; min-width: 260px; }
+    .pipe-detail-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .pipe-detail-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+
+    /* Two-column layout for Overview */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* Fix Groups Grid */
+    .fix-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .fix-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--fixed);
+      border-radius: var(--radius-sm);
+      padding: 15px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .fix-card.open-card {
+      border-left-color: var(--open);
+      background: color-mix(in srgb, var(--open-bg) 45%, var(--bg-elev));
+    }
+    .fix-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .fix-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .fix-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .sc-chip {
+      border: 1px solid var(--fixed-border);
+      background: var(--fixed-bg);
+      color: var(--fixed);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .sc-chip:hover {
+      background: var(--fixed);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .sc-chip.pass {
+      border-color: var(--pass-border);
+      background: var(--pass-bg);
+      color: var(--pass);
+    }
+    .sc-chip.pass:hover { background: var(--pass); color: #fff; }
+    .sc-chip.open {
+      border-color: var(--open-border);
+      background: var(--open-bg);
+      color: var(--open);
+    }
+    .sc-chip.open:hover { background: var(--open); color: #fff; }
+
+    /* Category Breakdown Card */
+    .cat-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .cat-row {
+      padding: 10px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.14s;
+      margin-bottom: 4px;
+    }
+    .cat-row:hover { background: var(--bg-subtle); }
+    .cat-row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      margin-bottom: 6px;
+    }
+    .cat-row-name { font-weight: 600; color: var(--text); }
+    .cat-row-nums { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-soft); white-space: nowrap; }
+    .mini-bar {
+      height: 7px;
+      border-radius: 99px;
+      overflow: hidden;
+      display: flex;
+      background: var(--bg-subtle);
+      gap: 1.5px;
+    }
+
+    /* Explorer Toolbar */
+    .toolbar {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .toolbar-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-box input:focus { border-color: var(--fixed); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-soft);
+      pointer-events: none;
+    }
+    .select-box {
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .pill-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 99px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .pill-btn:hover { border-color: var(--border-strong); color: var(--text); }
+    .pill-btn.active {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+    }
+    .pill-btn.active-pass { background: var(--pass); color: #fff; border-color: var(--pass); }
+    .pill-btn.active-fixed { background: var(--fixed); color: #fff; border-color: var(--fixed); }
+    .pill-btn.active-open { background: var(--open); color: #fff; border-color: var(--open); }
+    .pill-btn.toggle-on {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-color: var(--warn-border);
+    }
+    .toolbar-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--text-soft);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Scenario List / Accordion */
+    .scenario-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sc-item {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .sc-item:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .sc-item.status-open { border-left: 4px solid var(--open); }
+    .sc-item.status-fixed { border-left: 4px solid var(--fixed); }
+    .sc-item.status-pass { border-left: 4px solid var(--pass); }
+
+    .sc-header {
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .sc-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .sc-code {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 12.5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .sc-cat-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--bg-subtle);
+      color: var(--text-soft);
+      flex-shrink: 0;
+    }
+    .sc-title {
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--text);
+      flex: 1;
+      min-width: 200px;
+    }
+    .sc-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .status-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 99px;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+    .status-badge.pass { background: var(--pass-bg); color: var(--pass); border-color: var(--pass-border); }
+    .status-badge.fixed { background: var(--fixed-bg); color: var(--fixed); border-color: var(--fixed-border); }
+    .status-badge.open { background: var(--open-bg); color: var(--open); border-color: var(--open-border); }
+
+    .chev {
+      color: var(--text-soft);
+      transition: transform 0.18s;
+      font-size: 12px;
+    }
+    .sc-item.expanded .chev { transform: rotate(180deg); }
+
+    .sc-body {
+      display: none;
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-subtle) 35%, var(--bg-elev));
+    }
+    .sc-item.expanded .sc-body { display: block; }
+
+    /* Cycle Flow Pills */
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-soft);
+      margin: 14px 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cycle-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .cycle-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
+    }
+    .cycle-step.ok { border-color: var(--pass-border); background: var(--pass-bg); color: var(--text); }
+    .cycle-step.reject { border-color: var(--open-border); background: var(--open-bg); color: var(--open); }
+    .cycle-step.block { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn); }
+    .cycle-step.allow { border-color: var(--fixed-border); background: var(--fixed-bg); color: var(--fixed); }
+    .cycle-arrow { color: var(--text-soft); font-size: 12px; font-weight: 700; }
+
+    /* Checks & Diffs */
+    .check-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 6px 14px;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 12.5px;
+      padding: 4px 0;
+      color: var(--text-muted);
+    }
+    .check-icon { font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+    .check-icon.ok { color: var(--pass); }
+    .check-icon.fail { color: var(--open); }
+
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .diff-box {
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      border: 1px solid;
+    }
+    .diff-box.old {
+      background: var(--open-bg);
+      border-color: var(--open-border);
+      color: var(--text);
+    }
+    .diff-box.current {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+      color: var(--text);
+    }
+    .diff-box.note {
+      background: var(--fixed-bg);
+      border-color: var(--fixed-border);
+      color: var(--text);
+    }
+    .diff-title {
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .diff-box.old .diff-title { color: var(--open); }
+    .diff-box.current .diff-title { color: var(--warn); }
+    .diff-box.note .diff-title { color: var(--fixed); }
+    .diff-box ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .diff-box li { display: flex; gap: 6px; align-items: flex-start; word-break: break-word; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 860px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .modal-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .modal-body {
+      padding: 18px 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-foot {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-subtle);
+    }
+
+    /* Visual FIFO Simulator */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .sim-layout { grid-template-columns: 1fr; }
+    }
+    .sim-sidebar {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sim-choice {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 11px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .sim-choice:hover { border-color: var(--fixed); }
+    .sim-choice.active {
+      background: var(--fixed-bg);
+      border-color: var(--fixed);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--fixed) 15%, transparent);
+    }
+    .sim-stage {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .mode-switch {
+      display: inline-flex;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mode-btn.active-new { background: var(--pass); color: #fff; }
+    .mode-btn.active-old { background: var(--open); color: #fff; }
+    .mode-btn.active-ideal { background: var(--fixed); color: #fff; }
+
+    .fifo-vis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    @media (max-width: 720px) {
+      .fifo-vis-grid { grid-template-columns: 1fr; }
+    }
+    .fifo-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .unit-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .unit-tile {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border-strong);
+      background: var(--bg-elev);
+      font-size: 12px;
+      min-width: 96px;
+      transition: all 0.2s;
+    }
+    .unit-tile.used {
+      opacity: 0.42;
+      border-style: dashed;
+    }
+    .unit-tile.active-take {
+      border-color: var(--fixed);
+      background: var(--fixed-bg);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+    .unit-tile.error-tile {
+      border-color: var(--open);
+      background: var(--open-bg);
+    }
+    .step-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    /* Open Issues & Decisions */
+    .option-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media (max-width: 720px) {
+      .option-compare { grid-template-columns: 1fr; }
+    }
+    .opt-card {
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: var(--bg);
+    }
+    .opt-card.recommended {
+      border-color: var(--pass);
+      background: color-mix(in srgb, var(--pass-bg) 50%, var(--bg-elev));
+    }
+    .cmd-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      margin: 10px 0 14px;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { background: #334155; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      background: var(--bg-elev);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      color: var(--text-soft);
+    }
+
+    /* Print */
+    @media print {
+      .topbar, .toolbar, .topbar-actions, .step-controls { display: none !important; }
+      .tab-panel { display: block !important; page-break-after: always; }
+      .sc-body { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-icon">SP</div>
+      <div>
+        <div>Simulasi Siklus SPBP</div>
+      </div>
+    </div>
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="overview">Ringkasan & Perbaikan</button>
+      <button class="nav-tab" data-tab="explorer">Eksplorasi Skenario <span class="badge-count">50</span></button>
+      <button class="nav-tab" data-tab="simulator">Simulasi Visual FIFO</button>
+      <button class="nav-tab" data-tab="issues">Temuan Terbuka & Panduan <span class="badge-count">4</span></button>
+    </nav>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggle" title="Ubah Tema Terang/Gelap">🌙 Gelap</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- TAB 1: OVERVIEW -->
+  <section id="tab-overview" class="tab-panel active">
+    <div class="hero-card">
+      <div class="hero-top">
+        <div>
+          <h1 class="hero-title">Simulasi Siklus SPBP: Skenario & Status Perbaikan</h1>
+          <p class="hero-desc">
+            Ringkasan <strong>50 skenario pengujian end-to-end</strong> di <span class="inline-code">tests/Feature/Simulasi/SimulasiSpbpTest.php</span>.
+            Setiap skenario dijalankan dua kali: pada kode <strong>sebelum perbaikan</strong> dan <strong>sesudah perbaikan</strong> melalui route, FormRequest, dan controller asli (user ADMIN, meniru payload form frontend, rollback via <span class="inline-code">DatabaseTransactions</span>).
+          </p>
+        </div>
+      </div>
+      <div class="meta-grid">
+        <div class="meta-pill">📅 Tanggal: <strong>20 November 2026</strong></div>
+        <div class="meta-pill">🌿 Branch: <strong class="mono">feat/percepatan-lookupstok</strong></div>
+        <div class="meta-pill">⏮️ Kode lama: <strong class="mono">ea625d31b</strong></div>
+        <div class="meta-pill">✅ Kode baru: <strong class="mono">ebf120973</strong> ("refaktoring SPBP dan pengujian skenario SPBP")</div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <button class="kpi-card" style="--kpi-color: var(--text)" onclick="jumpToExplorer('all')">
+        <div class="kpi-label"><span>Total Skenario</span><span>📊</span></div>
+        <div class="kpi-value">50</div>
+        <div class="kpi-sub">7 kelompok pengujian (A–G) · Klik untuk buka semua</div>
+      </button>
+      <button class="kpi-card" style="--kpi-color: var(--pass)" onclick="jumpToExplorer('pass')">
+        <div class="kpi-label"><span>Benar dari awal</span><span>✅</span></div>
+        <div class="kpi-value">30</div>
+        <div class="kpi-sub">60% · Lulus di kode lama & kode baru</div>
+      </button>
+      <button class="kpi-card" style="--kpi-color: var(--fixed)" onclick="jumpToExplorer('fixed')">
+        <div class="kpi-label"><span>Baru diperbaiki</span><span>🔧</span></div>
+        <div class="kpi-value">19</div>
+        <div class="kpi-sub">38% · Gagal di lama, lulus di commit ebf120973</div>
+      </button>
+      <button class="kpi-card" style="--kpi-color: var(--open)" onclick="jumpToExplorer('open')">
+        <div class="kpi-label"><span>Belum diperbaiki</span><span>❌</span></div>
+        <div class="kpi-value">1</div>
+        <div class="kpi-sub">2% · S13 (ban diperbaiki 2x) masih terbuka</div>
+      </button>
+    </div>
+
+    <div class="stacked-bar-wrap">
+      <div class="stacked-bar-head">
+        <strong style="font-size:13.5px;">Proporsi Status 50 Skenario (98% Lulus di Kode Baru)</strong>
+        <div class="legend">
+          <span class="legend-item"><span class="dot" style="background:var(--pass)"></span> Benar dari awal (30)</span>
+          <span class="legend-item"><span class="dot" style="background:var(--fixed)"></span> Baru diperbaiki (19)</span>
+          <span class="legend-item"><span class="dot" style="background:var(--open)"></span> Belum diperbaiki (1)</span>
+        </div>
+      </div>
+      <div class="stacked-bar">
+        <div class="stacked-seg" style="width:60%; background:var(--pass)" title="30 Benar dari awal (60%)" onclick="jumpToExplorer('pass')"></div>
+        <div class="stacked-seg" style="width:38%; background:var(--fixed)" title="19 Baru diperbaiki (38%)" onclick="jumpToExplorer('fixed')"></div>
+        <div class="stacked-seg" style="width:2%; background:var(--open)" title="1 Belum diperbaiki (2%)" onclick="jumpToExplorer('open')"></div>
+      </div>
+    </div>
+
+    <!-- Interactive Pipeline -->
+    <div class="pipeline-card">
+      <div class="section-title">
+        <span>Alur Siklus SPBP yang Diuji</span>
+        <span class="section-sub">Klik setiap tahap untuk melihat aturan & skenario terkait</span>
+      </div>
+      <div class="pipeline-nodes" id="pipelineNodes"></div>
+      <div class="pipe-detail" id="pipelineDetail"></div>
+    </div>
+
+    <div class="two-col">
+      <!-- Left: 6 Fix Groups -->
+      <div>
+        <div class="section-title">
+          <span>Apa yang Diperbaiki di Commit <span class="inline-code">ebf120973</span></span>
+          <span class="section-sub">Klik kode skenario untuk membuka rincian</span>
+        </div>
+        <div class="fix-grid" id="fixGroupsContainer"></div>
+      </div>
+
+      <!-- Right: Category Breakdown -->
+      <div>
+        <div class="section-title">
+          <span>Distribusi per Kategori (A–G)</span>
+          <span class="section-sub">Klik kategori untuk filter</span>
+        </div>
+        <div class="cat-card" id="categoryBreakdown"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: SCENARIO EXPLORER -->
+  <section id="tab-explorer" class="tab-panel">
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Cari kode (mis. S39), judul, pesan error, atau cek... (tekan /)" />
+        </div>
+        <select class="select-box" id="categoryFilter">
+          <option value="all">Semua Kategori (A–G)</option>
+        </select>
+      </div>
+      <div class="toolbar-row">
+        <div class="filter-pills" id="statusFilterPills">
+          <button class="pill-btn active" data-status="all">Semua (50)</button>
+          <button class="pill-btn" data-status="pass">✅ Benar dari awal (30)</button>
+          <button class="pill-btn" data-status="fixed">🔧 Baru diperbaiki (19)</button>
+          <button class="pill-btn" data-status="open">❌ Belum diperbaiki (1)</button>
+        </div>
+        <div class="filter-pills" style="margin-left:auto;">
+          <button class="pill-btn" id="toggleDiffOnly">⚡ Ada diff lama vs baru</button>
+          <button class="pill-btn" id="toggleErr500">💥 Error 500 di kode lama</button>
+          <button class="pill-btn" id="toggleReject">⛔ Ada penolakan/blokir</button>
+        </div>
+      </div>
+      <div class="toolbar-meta">
+        <span id="resultCount">Menampilkan 50 dari 50 skenario</span>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="icon-btn" id="expandAllBtn">Buka Semua</button>
+          <button class="icon-btn" id="collapseAllBtn">Tutup Semua</button>
+          <button class="icon-btn" id="resetFilterBtn">Reset Filter</button>
+        </div>
+      </div>
+    </div>
+    <div class="scenario-list" id="scenarioList"></div>
+  </section>
+
+  <!-- TAB 3: VISUAL FIFO SIMULATOR -->
+  <section id="tab-simulator" class="tab-panel">
+    <div class="hero-card" style="margin-bottom:16px;">
+      <h2 style="font-size:18px; font-weight:800; margin-bottom:4px;">Simulasi Visual FIFO & Penambahan Nilai SPBP</h2>
+      <p class="hero-desc">
+        Bandingkan secara interaktif bagaimana <strong>Kode Lama (<span class="mono">ea625d31b</span>)</strong> vs <strong>Kode Baru (<span class="mono">ebf120973</span>)</strong> mengalokasikan lapisan SPB dan penambahan nilai SPBP pada skenario kunci.
+      </p>
+    </div>
+    <div class="sim-layout">
+      <div class="sim-sidebar" id="simSidebar"></div>
+      <div class="sim-stage" id="simStage"></div>
+    </div>
+  </section>
+
+  <!-- TAB 4: OPEN ISSUES & GUIDE -->
+  <section id="tab-issues" class="tab-panel">
+    <div class="section-title">
+      <span>Yang Masih Terbuka (4 Item)</span>
+      <span class="section-sub">Perlu keputusan bisnis atau perbaikan lanjutan</span>
+    </div>
+
+    <div class="fix-grid" style="margin-bottom:24px;">
+      <div class="fix-card open-card">
+        <div class="fix-head">
+          <div class="fix-title">1. S13 / Temuan no. 10: Ban yang sama diperbaiki dua kali</div>
+          <button class="sc-chip open" onclick="openModal('S13')">Lihat S13</button>
+        </div>
+        <p class="fix-desc">
+          Sudah dikonfirmasi memang terjadi di lapangan sehingga <strong>harus diperbaiki</strong>. Akar masalah: SPBP hanya merujuk ke SPB asal (header) dan SPBS (detail). Tidak ada rujukan ke SPBP sebelumnya, sehingga FIFO menganggap setiap qty SPBP sebagai ban yang berbeda.
+        </p>
+        <ul style="margin:0 0 12px 18px; font-size:13px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px;">
+          <li><strong>SPB qty 1:</strong> biaya SPBP kedua tidak pernah dibebankan ke SPK mana pun (S13: harapan <strong>Rp 650.000</strong>, kode lama Rp 550.000, kode baru Rp 600.000).</li>
+          <li><strong>SPB qty &gt; 1:</strong> biaya perbaikan ulang menempel ke ban lain yang tidak pernah diperbaiki (disimpulkan dari kode, belum ada skenario).</li>
+        </ul>
+        <div style="font-size:12.5px; font-weight:700; margin-bottom:4px;">Dua pilihan solusi (belum diputuskan):</div>
+        <div class="option-compare">
+          <div class="opt-card recommended">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong style="color:var(--pass);">Pilihan A · Rujukan Eksplisit</strong>
+              <span class="status-badge pass">Disarankan</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:8px;">
+              SPBS menandai <em>"perbaikan ulang dari SPBP X"</em>. Akurat untuk SPB qty 1 maupun qty banyak.
+            </p>
+            <div style="font-size:12px; color:var(--text-soft);">
+              Kebutuhan: kolom induk baru (migrasi), lookup baru di form SPBS (repo frontend), FIFO yang menumpuk biaya SPBP turunan, serta validasi qty ulang ≤ qty SPBP induk yang belum terpakai.
+            </div>
+          </div>
+          <div class="opt-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong>Pilihan B · Aturan Kelebihan Qty</strong>
+              <span class="sc-cat-tag">Backend saja</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:8px;">
+              Jika total qty SPBP melebihi qty SPB, kelebihannya dianggap perbaikan ulang.
+            </p>
+            <div style="font-size:12px; color:var(--open);">
+              Keterbatasan: kasus SPB berisi banyak ban tetap tidak tertangkap (biaya tetap bisa menempel ke ban lain).
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:12.5px; color:var(--text-muted);">
+          📌 <strong>Tindak lanjut:</strong> Apa pun pilihannya, perlu skenario baru: <em>SPB 5 ban, satu ban diperbaiki dua kali</em>.
+        </div>
+      </div>
+
+      <div class="fix-card" style="border-left-color: var(--warn);">
+        <div class="fix-head">
+          <div class="fix-title">2. Harga di grid detail SPK untuk unit tanpa perbaikan</div>
+          <span class="sc-cat-tag">Belum ditangani</span>
+        </div>
+        <p class="fix-desc" style="margin-bottom:0;">
+          Pada <span class="inline-code">PengeluaranStokDetailFifo</span>, kolom <span class="inline-code">penerimaanstok_harga</span> untuk baris qty yang tidak mendapat penambahan nilai berisi <strong>nilai total</strong>, bukan harga satuan.
+        </p>
+      </div>
+
+      <div class="fix-card" style="border-left-color: var(--warn);">
+        <div class="fix-head">
+          <div class="fix-title">3. Harga dasar penambahan nilai memakai harga SPB sebelum diskon</div>
+          <span class="sc-cat-tag">Belum ada skenario</span>
+        </div>
+        <p class="fix-desc" style="margin-bottom:0;">
+          Perhitungan harga dasar penambahan nilai saat ini menggunakan harga SPB sebelum diskon. Belum dibuatkan skenario pengujiannya.
+        </p>
+      </div>
+
+      <div class="fix-card" style="border-left-color: var(--warn);">
+        <div class="fix-head">
+          <div class="fix-title">4. S27: PGDO bertahap (PG 3 ban, PGDO hanya 2 ban)</div>
+          <button class="sc-chip pass" onclick="openModal('S27')">Lihat S27</button>
+        </div>
+        <p class="fix-desc" style="margin-bottom:0;">
+          Saat ini ditolak validasi (HTTP 422) dengan pesan <span class="inline-code">detail_qty.0: qty tidak sama dengan yang di rincian</span>. Skenario baru mencatat perilaku saat ini; <strong>aturan bisnisnya masih perlu dikonfirmasi</strong> apakah pengiriman bertahap ke pihak 3 seharusnya diizinkan atau memang ditolak.
+        </p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="cat-card">
+        <div class="section-title"><span>Keputusan yang Sudah Diambil</span></div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="padding:12px; border-radius:8px; background:var(--bg-subtle); border:1px solid var(--border);">
+            <strong style="display:block; margin-bottom:4px;">✅ Temuan no. 4: Kolom total detail SPBP = 0</strong>
+            <span style="font-size:13px; color:var(--text-muted);">Disepakati <strong>bukan error</strong> (perilaku yang memang diinginkan).</span>
+          </div>
+          <div style="padding:12px; border-radius:8px; background:var(--bg-subtle); border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <strong>✅ SPBS status SPBP = YA boleh tanpa nomor SPB</strong>
+              <button class="sc-chip pass" onclick="openModal('S18')">S18</button>
+            </div>
+            <span style="font-size:13px; color:var(--text-muted);">Validasi wajib SPB sengaja dikomentari di <span class="inline-code">StorePenerimaanStokDetailRequest</span>, karena stok REUSE yang sama bisa masuk lewat SPBS bukan sebagai penambahan nilai. SPBS tersimpan tanpa membuat SPBP.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cat-card">
+        <div class="section-title"><span>Cara Menjalankan Ulang Test</span></div>
+        <div class="cmd-box">
+          <code id="testCmd">php artisan test tests/Feature/Simulasi/SimulasiSpbpTest.php</code>
+          <button class="copy-btn" id="copyCmdBtn">Salin</button>
+        </div>
+        <ul style="margin-left:18px; font-size:13px; color:var(--text-muted); display:flex; flex-direction:column; gap:6px;">
+          <li>Durasi sekitar <strong>7 menit</strong> (jeda 1 detik antar-dokumen agar <span class="inline-code">created_at</span> tidak kembar).</li>
+          <li>Memakai database bersama (<span class="inline-code">192.168.2.3</span>) dengan <span class="inline-code">DatabaseTransactions</span> sehingga semua data di-rollback setelah tiap skenario.</li>
+          <li>Setelah run selesai, pastikan tidak ada stok bernama <span class="inline-code">SIMSPBP%</span> yang tertinggal.</li>
+          <li>Log hasil tiap langkah ditulis ke <span class="inline-code">storage/logs/simulasi-spbp.jsonl</span>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop" id="scenarioModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;" id="modalBadges"></div>
+        <h3 style="font-size:16px; font-weight:800;" id="modalTitle"></h3>
+      </div>
+      <button class="icon-btn" id="closeModalBtn">✕ Tutup</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="icon-btn" id="prevModalBtn">← Sebelumnya</button>
+      <span style="font-size:12px; color:var(--text-soft);" id="modalCounter"></span>
+      <button class="icon-btn" id="nextModalBtn">Berikutnya →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RAW_DATA = {"categories": [{"id": "A", "name": "Siklus normal"}, {"id": "B", "name": "Urutan dan ketersediaan stok"}, {"id": "C", "name": "Validasi yang harus menolak"}, {"id": "D", "name": "Edit, hapus, dan approval ulang"}, {"id": "E", "name": "Pembagian qty penambahan nilai (FIFO)"}, {"id": "F", "name": "FIFO normal (SPB1 2x5.000, SPB2 3x5.500, SPB3 1x6.000, SPB4 2x4.000)"}, {"id": "G", "name": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus"}], "scenarios": [{"code": "S01", "title": "Siklus lengkap: SPB 1 ban -> approval -> PG -> PGDO -> SPBS (YA) -> SPK", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "PG otomatis berstatus approval penambahan nilai"}, {"ok": true, "text": "approvalstokpg.nobukti_pg diisi nomor PG"}, {"ok": true, "text": "Nilai PG dinolkan"}, {"ok": true, "text": "Jurnal PG ber-approval tidak ada"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 200.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 200.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "Qty kartu stok gudang kantor setelah SPBS (fisik: 1 ban di kantor) = 1"}, {"ok": true, "text": "SPK 1 ban dari gudang kantor tersimpan"}, {"ok": true, "text": "Nilai keluar SPK = 500.000 + 200.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S02", "title": "1 SPB berisi 3 ban (A, B, C); hanya A dan B yang diperbaiki; SPK ketiganya sekaligus", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `Approval stok PG` ✓ → `PG A` ✓ → `PG B` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1+1+1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG A", "badge": "✓", "type": "ok"}, {"label": "PG B", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1+1+1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [A]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [A]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [A]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000 [A]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 100.000 [A]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [A]"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [B]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [B]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [B]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 150.000 [B]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 150.000 [B]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [B]"}, {"ok": true, "text": "A dan B mendapat SPBP yang berbeda"}, {"ok": true, "text": "SPK A+B+C sekaligus tersimpan"}, {"ok": true, "text": "Nilai keluar A = 600.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Nilai keluar B = 750.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Nilai keluar C = 700.000 (tidak diperbaiki)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S03", "title": "SPBS tanpa mengisi nobukti PGDO (kolom tidak wajib)", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBS tanpa PGDO, status YA, @200.000 tersimpan"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 200.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 200.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar SPK = 700.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S04", "title": "SPB 1 stok qty 3, diperbaiki ketiganya, lalu dipakai bertahap: SPK 2 kemudian SPK 1", "category": "A", "categoryName": "Siklus normal", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 100.000` ✓ → `SPK qty 2` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 3 unit x Rp 100.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "SPK pertama qty 2 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK pertama = 2 x 600.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2)"}, {"ok": true, "text": "SPK kedua qty 1 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK kedua = 1 x 600.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Nilai keluar SPK pertama = 2 x 600.000 — harapan Rp 1.200.000, hasil Rp 600.000", "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2) — kartu stok mencatat 1"], "currentCode": []}, {"code": "S05", "title": "SPB qty 3 diperbaiki ketiganya, lalu SPK hanya 1", "category": "A", "categoryName": "Siklus normal", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 100.000` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK qty 1 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK = 1 x 600.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Nilai keluar SPK = 1 x 600.000 — harapan Rp 600.000, hasil Rp 1.200.000", "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1) — kartu stok mencatat 2"], "currentCode": []}, {"code": "S06", "title": "SPB qty 3, 1 sudah dipakai SPK, sisa 2 diperbaiki, lalu SPK 2", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `SPK qty 1` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 100.000` ✓ → `SPK qty 2` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK pertama qty 1 (sebelum perbaikan) tersimpan"}, {"ok": true, "text": "Nilai keluar SPK pertama = 500.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 2 unit x Rp 100.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "SPK kedua qty 2 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK kedua = 2 x 600.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (2)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S07", "title": "FIFO dua lapisan: SPB lama (tidak diperbaiki) + SPB baru (diperbaiki), SPK mengambil keduanya", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `SPK qty 2` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 200.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 200.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "SPK qty 2 tersimpan"}, {"ok": true, "text": "Nilai keluar = 400.000 + (500.000 + 200.000)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S08", "title": "1 SPBS berisi 2 baris: ban A dari siklus approval (YA) dan ban B dari trado (TIDAK)", "category": "A", "categoryName": "Siklus normal", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PG B kantor > trado` ✓ → `PG B trado > sementara` ✓ → `PGDO` ✓ → `SPBS` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PG B kantor > trado", "badge": "✓", "type": "ok"}, {"label": "PG B trado > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBS A (YA, SPB terisi) + B (TIDAK, tanpa SPB) tersimpan"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [A]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [A]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [A]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 200.000 [A]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 200.000 [A]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [A]"}, {"ok": true, "text": "Baris B (TIDAK) tidak membuat SPBP"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S09", "title": "SPK dari gudang kantor saat ban sedang diperbaiki di pihak 3 (setelah PGDO, sebelum SPBS)", "category": "B", "categoryName": "Urutan dan ketersediaan stok", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPK qty 1` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Qty kartu stok gudang kantor setelah PGDO (ban sedang di pihak 3) = 0"}, {"ok": true, "text": "SPK ban yang sedang di pihak 3 ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak cukup\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S10", "title": "Setelah siklus lengkap 1 ban, SPK 2 ban (fisik di kantor hanya 1)", "category": "B", "categoryName": "Urutan dan ketersediaan stok", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `SPK qty 2` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPK 2 ban padahal fisik 1 ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak cukup\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S11", "title": "PG/PGDO 3 ban, SPBS baru kembali 2 ban, lalu SPK 3 ban (1 ban masih di pihak 3)", "category": "B", "categoryName": "Urutan dan ketersediaan stok", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 3` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 3", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 2 unit x Rp 100.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "Qty kartu stok gudang kantor setelah SPBS 2 dari 3 (fisik: 2 di kantor, 1 di pihak 3) = 2"}, {"ok": true, "text": "SPK 3 ban padahal 1 masih di pihak 3 ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak cukup\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S12", "title": "Ban yang sudah di-PG ke sementara di-PG lagi dari kantor dengan approval baru", "category": "B", "categoryName": "Urutan dan ketersediaan stok", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `Approval stok PG` ✓ → `PG kedua kantor > sementara` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kedua kantor > sementara", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Qty kartu stok gudang kantor setelah PG pertama (ban sudah di sementara) = 0"}, {"ok": true, "text": "PG kedua untuk ban yang sudah tidak ada di kantor ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak cukup\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S13", "title": "Ban yang sama diperbaiki dua kali (2 siklus SPBS ke SPB yang sama) sebelum dipakai SPK", "category": "B", "categoryName": "Urutan dan ketersediaan stok", "status": "❌ Belum diperbaiki", "statusKey": "open", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 100.000` ✓ → `Approval stok PG (siklus 2)` ✓ → `PG kantor > sementara (siklus 2)` ✓ → `PGDO sementara > pihak 3 (siklus 2)` ✓ → `SPBS pihak 3 > kantor @Rp 50.000 (siklus 2)` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3 (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 50.000 (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [siklus 1]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [siklus 1]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [siklus 1]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000 [siklus 1]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 100.000 [siklus 1]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [siklus 1]"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [siklus 2]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [siklus 2]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [siklus 2]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 50.000 [siklus 2]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 50.000 [siklus 2]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [siklus 2]"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": false, "text": "Nilai keluar = 500.000 + 100.000 + 50.000 — _harapan Rp 650.000, hasil Rp 600.000_"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Nilai keluar = 500.000 + 100.000 + 50.000 — harapan Rp 650.000, hasil Rp 550.000"], "currentCode": ["Nilai keluar = 500.000 + 100.000 + 50.000 — harapan Rp 650.000, hasil Rp 600.000"]}, {"code": "S14", "title": "PG kantor > sementara tanpa approval stok PG", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `PG` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PG tanpa approval ditolak validasi (HTTP 422) dengan pesan memuat \"approv\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S15", "title": "Approval stok PG kedua untuk stok yang approval pertamanya belum dipakai PG", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`Approval stok PG` ✓ → `Approval stok PG` ⛔ ditolak", "cycleSteps": [{"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Approval stok PG kedua ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S16", "title": "PG pihak 3 > sementara selagi approval belum punya SPBP (harus lewat SPBS)", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `PG pihak 3 > sementara` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "PG pihak 3 > sementara", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PG pihak 3 > sementara ditolak validasi (HTTP 422) dengan pesan memuat \"approval\""}], "notes": [], "oldCode": ["PG pihak 3 > sementara ditolak validasi (HTTP 422) dengan pesan memuat \"approval\" — HTTP 201: Berhasil disimpan"], "currentCode": []}, {"code": "S17", "title": "PG pihak 3 > kantor (harus lewat SPBS)", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `PG pihak 3 > kantor` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "PG pihak 3 > kantor", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PG pihak 3 > kantor ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S18", "title": "SPBS status SPBP = YA tetapi nobukti SPB kosong (diizinkan: stok yang sama bisa masuk bukan sebagai penambahan nilai)", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBS YA tanpa SPB tersimpan"}, {"ok": true, "text": "Tidak ada SPBP yang dibuat"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S19", "title": "SPBS qty 2 padahal PG/PGDO hanya 1", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS qty 2 ditolak validasi (HTTP 422) dengan pesan memuat \"qty\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S20", "title": "SPBS untuk stok NON REUSE", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS stok non reuse ditolak validasi (HTTP 422) dengan pesan memuat \"reuse\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S21", "title": "SPBS dibuat saat ban baru sampai sementara (belum PGDO ke pihak 3)", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS sebelum PGDO ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak cukup\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S22", "title": "SPBS memilih nobukti SPB milik stok lain", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS X dengan SPB milik Z ditolak validasi (HTTP 422) dengan pesan memuat \"SPB tidak valid\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S23", "title": "SPBS memilih SPB lama yang stoknya sudah habis dipakai SPK (bukan SPB asal ban)", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `SPK qty 1` ✓ → `SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}, {"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS dengan SPB yang sudah habis ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["SPBS dengan SPB yang sudah habis ditolak validasi (HTTP 422) — HTTP 201: Berhasil disimpan", "Nilai keluar SPK berikutnya tetap membawa biaya perbaikan (500.000 + 200.000) — harapan Rp 700.000, hasil Rp 500.000"], "currentCode": []}, {"code": "S24", "title": "PGDO dengan rincian nobukti yang bukan PG", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO rincian nomor SPB X` ⛔ ditolak → `PGDO rincian nomor SPB Z` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO rincian nomor SPB X", "badge": "⛔ ditolak", "type": "reject"}, {"label": "PGDO rincian nomor SPB Z", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PGDO X dengan rincian = nomor SPB X (bukan PG) ditolak validasi (HTTP 422) dengan pesan memuat \"PG\""}, {"ok": true, "text": "PGDO X dengan rincian = nomor SPB Z (tidak memuat X) ditolak validasi (HTTP 422) dengan pesan memuat \"PG\""}], "notes": [], "oldCode": ["PGDO X dengan rincian = nomor SPB X (bukan PG) ditolak validasi (HTTP 422) dengan pesan memuat \"PG\" — HTTP 201: Berhasil disimpan", "PGDO X dengan rincian = nomor SPB Z (tidak memuat X) ditolak validasi (HTTP 422) dengan pesan memuat \"PG\" — HTTP 500: Attempt to read property \"qty\" on null [ErrorException @ PenerimaanstokQtyRule.php:60]"], "currentCode": []}, {"code": "S25", "title": "PG kantor > sementara berisi ban dan aki sekaligus", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `Approval stok PG` ✓ → `PG` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PG ban + aki ditolak validasi (HTTP 422) dengan pesan memuat \"kelompok\""}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S26", "title": "Input SPBP manual lewat form penerimaan stok", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `SPBP manual` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "SPBP manual", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Simpan SPBP manual ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S27", "title": "PG 3 ban, PGDO hanya 2 ban (pengiriman ke pihak 3 bertahap) - perlu konfirmasi aturan bisnis", "category": "C", "categoryName": "Validasi yang harus menolak", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO qty 2 dari PG qty 3` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO qty 2 dari PG qty 3", "badge": "⛔ ditolak", "type": "reject"}], "checks": [], "notes": ["PGDO sebagian (2 dari 3): HTTP 422 - detail_qty.0: qty tidak sama dengan yang di rincian"], "oldCode": [], "currentCode": []}, {"code": "S28", "title": "Edit SPBS: harga perbaikan diubah 200.000 menjadi 300.000 sebelum SPK", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `cekvalidasi EDIT SPBS` ✓ boleh → `Edit SPBS` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi EDIT SPBS", "badge": "✓ boleh", "type": "allow"}, {"label": "Edit SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Form edit SPBS boleh dibuka"}, {"ok": true, "text": "Edit SPBS harga 300.000 tersimpan"}, {"ok": true, "text": "SPBP tetap satu dan nomornya tidak berubah"}, {"ok": true, "text": "Jumlah SPBP untuk SPB ini tetap 1"}, {"ok": true, "text": "Detail SPBP tetap 1 baris"}, {"ok": true, "text": "Harga SPBP ikut berubah menjadi 300.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp tetap menunjuk SPBP"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [setelah edit]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [setelah edit]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [setelah edit]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 300.000 [setelah edit]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 300.000 [setelah edit]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [setelah edit]"}, {"ok": true, "text": "Total detail SPBS menjadi 300.000"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar = 500.000 + 300.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Edit SPBS harga 300.000 tersimpan — HTTP 500: Attempt to read property \"qty\" on null [ErrorException @ PenerimaanstokQtyRule.php:104]"], "currentCode": []}, {"code": "S29", "title": "Hapus SPBS sebelum SPK, lalu input SPBS ulang", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `cekvalidasi DELETE SPBS` ✓ boleh → `Hapus SPBS` ✓ → `SPBS ulang` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE SPBS", "badge": "✓ boleh", "type": "allow"}, {"label": "Hapus SPBS", "badge": "✓", "type": "ok"}, {"label": "SPBS ulang", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Hapus SPBS (belum dipakai) diizinkan"}, {"ok": true, "text": "Hapus SPBS tersimpan"}, {"ok": true, "text": "SPBP ikut terhapus"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp dikosongkan lagi"}, {"ok": true, "text": "Input SPBS ulang tersimpan"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [ulang]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [ulang]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [ulang]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 250.000 [ulang]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 250.000 [ulang]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [ulang]"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar = 500.000 + 250.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S30", "title": "Hapus SPBS setelah penambahan nilainya sudah dipakai SPK", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `SPK qty 1` ✓ → `cekvalidasi DELETE SPBS` 🚫 diblok → `Hapus SPBS lewat API` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE SPBS", "badge": "🚫 diblok", "type": "block"}, {"label": "Hapus SPBS lewat API", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Form hapus SPBS diblok karena penambahan nilai sudah dipakai SPK"}, {"ok": true, "text": "Hapus SPBS lewat API ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["Form hapus SPBS diblok karena penambahan nilai sudah dipakai SPK", "Hapus SPBS lewat API ditolak validasi (HTTP 422) — HTTP 200: Berhasil dihapus"], "currentCode": []}, {"code": "S31", "title": "Hapus PG yang sudah dirujuk PGDO", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `cekvalidasi DELETE PG` 🚫 diblok → `Hapus PG lewat API` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE PG", "badge": "🚫 diblok", "type": "block"}, {"label": "Hapus PG lewat API", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Form hapus PG diblok karena sudah dirujuk PGDO"}, {"ok": true, "text": "Hapus PG lewat API ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["Form hapus PG diblok karena sudah dirujuk PGDO", "Hapus PG lewat API ditolak validasi (HTTP 422) — HTTP 200: Berhasil dihapus"], "currentCode": []}, {"code": "S32", "title": "Edit / hapus dokumen SPBP secara langsung", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `cekvalidasi DELETE SPBP` 🚫 diblok → `cekvalidasi EDIT SPBP` 🚫 diblok → `Hapus SPBP lewat API` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE SPBP", "badge": "🚫 diblok", "type": "block"}, {"label": "cekvalidasi EDIT SPBP", "badge": "🚫 diblok", "type": "block"}, {"label": "Hapus SPBP lewat API", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Form hapus SPBP diblok"}, {"ok": true, "text": "Form edit SPBP diblok"}, {"ok": true, "text": "Hapus SPBP lewat API ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["Hapus SPBP lewat API ditolak validasi (HTTP 422) — HTTP 200: Berhasil dihapus"], "currentCode": []}, {"code": "S33", "title": "Hapus SPB asal setelah SPBP terbentuk", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `cekvalidasi DELETE SPB` 🚫 diblok → `Hapus SPB lewat API` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE SPB", "badge": "🚫 diblok", "type": "block"}, {"label": "Hapus SPB lewat API", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Form hapus SPB diblok karena sudah dirujuk SPBP"}, {"ok": true, "text": "Hapus SPB lewat API ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["Form hapus SPB diblok karena sudah dirujuk SPBP", "Hapus SPB lewat API ditolak validasi (HTTP 422) — HTTP 200: Berhasil dihapus"], "currentCode": []}, {"code": "S34", "title": "Hapus SPK yang memakai penambahan nilai, lalu SPK ulang", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `SPK qty 1` ✓ → `Hapus SPK` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}, {"label": "Hapus SPK", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Nilai keluar SPK = 700.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Hapus SPK tersimpan"}, {"ok": true, "text": "Baris FIFO penambahan nilai SPK ikut terhapus"}, {"ok": true, "text": "SPK ulang 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar SPK ulang = 700.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S35", "title": "Un-approval PG penambahan nilai setelah SPBP terbentuk", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `Un-approval PG penambahan nilai` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "Un-approval PG penambahan nilai", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Un-approval PG yang sudah punya SPBP ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": ["Un-approval PG yang sudah punya SPBP ditolak validasi (HTTP 422) — HTTP 200: Berhasil"], "currentCode": []}, {"code": "S36", "title": "SPBS dengan diskon 10% (total sebelum 200.000, total 180.000)", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPBP terbentuk otomatis dari SPBS"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS"}, {"ok": true, "text": "Harga satuan SPBP = Rp 180.000"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 180.000"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar = 500.000 + 180.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S37", "title": "PG kantor > sementara memakai approval stok PG yang tanggal berlakunya sudah lewat", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "PG dengan approval kedaluwarsa ditolak validasi (HTTP 422) dengan pesan memuat \"approv\""}], "notes": [], "oldCode": ["PG dengan approval kedaluwarsa ditolak validasi (HTTP 422) dengan pesan memuat \"approv\" — HTTP 201: Berhasil disimpan"], "currentCode": []}, {"code": "S38", "title": "PG kantor > sementara berisi 2 ban (keduanya sudah di-approve) dalam 1 bukti", "category": "D", "categoryName": "Edit, hapus, dan approval ulang", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1+1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1+1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "PG A + B kantor > sementara tersimpan"}, {"ok": true, "text": "approvalstokpg A dan B terisi nomor PG"}, {"ok": true, "text": "PG tersimpan dengan 2 baris detail"}, {"ok": true, "text": "PG otomatis berstatus approval penambahan nilai"}, {"ok": true, "text": "Nilai kedua baris PG dinolkan"}, {"ok": true, "text": "Jurnal PG ber-approval tidak ada (sama seperti PG 1 ban di S01)"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [A]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [A]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [A]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 100.000 [A]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 100.000 [A]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [A]"}, {"ok": true, "text": "SPBP terbentuk otomatis dari SPBS [B]"}, {"ok": true, "text": "Header SPBP merujuk ke SPB asal [B]"}, {"ok": true, "text": "Detail SPBP merujuk ke SPBS [B]"}, {"ok": true, "text": "Harga satuan SPBP = Rp 150.000 [B]"}, {"ok": true, "text": "Tabel penambahan nilai SPBP: 1 unit x Rp 150.000 [B]"}, {"ok": true, "text": "approvalstokpg.nobukti_spbp diisi nomor SPBP [B]"}, {"ok": true, "text": "SPK A + B tersimpan"}, {"ok": true, "text": "Nilai keluar A = 500.000 + 100.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Nilai keluar B = 600.000 + 150.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["PG A + B kantor > sementara tersimpan — HTTP 500: SQLSTATE[23000]: Cannot insert duplicate key row in object 'dbo.jurnalumumheader' with unique index 'jurnalumumheader_nobukti_unique'. The duplicate key value is (PG 0001/XI/2026). [UniqueConstraintViolationException @ Connection.php:838]"], "currentCode": []}, {"code": "S39", "title": "SPB qty 5: 1 ban diperbaiki @100.000 (siklus 1), 4 ban diperbaiki @150.000 (siklus 2); SPK 2 lalu SPK 3", "category": "E", "categoryName": "Pembagian qty penambahan nilai (FIFO)", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG (siklus 1)` ✓ → `PG kantor > sementara (siklus 1)` ✓ → `PGDO sementara > pihak 3 (siklus 1)` ✓ → `SPBS pihak 3 > kantor @Rp 100.000 (siklus 1)` ✓ → `Approval stok PG (siklus 2)` ✓ → `PG kantor > sementara (siklus 2)` ✓ → `PGDO sementara > pihak 3 (siklus 2)` ✓ → `SPBS pihak 3 > kantor @Rp 150.000 (siklus 2)` ✓ → `SPK qty 2` ✓ → `SPK qty 3` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG (siklus 1)", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara (siklus 1)", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3 (siklus 1)", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000 (siklus 1)", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3 (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 150.000 (siklus 2)", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "✓", "type": "ok"}, {"label": "SPK qty 3", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK pertama qty 2 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK pertama = (500.000 + 100.000) + (500.000 + 150.000)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2)"}, {"ok": true, "text": "SPK kedua qty 3 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK kedua = 3 x (500.000 + 150.000)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (3)"}, {"ok": true, "text": "Qty perbaikan SPBP siklus 1 yang terpakai = 1"}, {"ok": true, "text": "Qty perbaikan SPBP siklus 2 yang terpakai = 4"}], "notes": [], "oldCode": ["SPK pertama qty 2: penambahan nilai tercatat SPBP 0001 qty 1 + SPBP 0002 qty 2, jadi 3 unit penambahan nilai untuk 2 ban", "SPK kedua qty 3 macet (loop tanpa akhir): dalam satu transaksi sistem terus menambah baris pengeluaranstokpenambahannilaififo untuk SPBP 0002 sampai 34.412 baris (total qty 68.824) selama ±50 menit, lalu proses dihentikan manual dan transaksi di-rollback"], "currentCode": []}, {"code": "S40", "title": "SPB lama 1 ban @400.000 + SPB baru 3 ban @500.000 (2 diperbaiki @200.000); SPK 2, SPK 1, lalu SPK 1", "category": "E", "categoryName": "Pembagian qty penambahan nilai (FIFO)", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB lama` ✓ → `SPB baru` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `SPK qty 2` ✓ → `SPK qty 1` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB lama", "badge": "✓", "type": "ok"}, {"label": "SPB baru", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 2", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK pertama qty 2 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK pertama = 400.000 + (500.000 + 200.000)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2)"}, {"ok": true, "text": "SPK kedua qty 1 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK kedua = 500.000 + 200.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "SPK ketiga qty 1 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK ketiga = 500.000 (perbaikan sudah habis)"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0003/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Qty perbaikan SPBP yang terpakai = 2 (tidak melebihi qty SPBS)"}], "notes": [], "oldCode": ["Nilai keluar SPK ketiga = 500.000 (perbaikan sudah habis) — harapan Rp 500.000, hasil Rp 700.000", "Qty perbaikan SPBP yang terpakai = 2 (tidak melebihi qty SPBS) — SPBP 0001/XI/2026 terpakai 3"], "currentCode": []}, {"code": "S41", "title": "SPB qty 3, hanya 1 ban diperbaiki @100.000, lalu SPK 3 sekaligus", "category": "E", "categoryName": "Pembagian qty penambahan nilai (FIFO)", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 100.000` ✓ → `SPK qty 3` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 100.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 3", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK qty 3 tersimpan"}, {"ok": true, "text": "Nilai keluar SPK = (500.000 + 100.000) + 2 x 500.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (3)"}, {"ok": true, "text": "Qty perbaikan SPBP yang terpakai = 1"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S42", "title": "FIFO normal stok NON REUSE: SPB1 2x5.000, SPB2 3x5.500, SPB3 1x6.000, SPB4 2x4.000; SPK 1, 3, 3, 1, lalu SPK 1 lagi", "category": "F", "categoryName": "FIFO normal (SPB1 2x5.000, SPB2 3x5.500, SPB3 1x6.000, SPB4 2x4.000)", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB1 2 x Rp 5.000` ✓ → `SPB2 3 x Rp 5.500` ✓ → `SPB3 1 x Rp 6.000` ✓ → `SPB4 2 x Rp 4.000` ✓ → `SPK A qty 1` ✓ → `SPK B qty 3` ✓ → `SPK C qty 3` ✓ → `SPK D qty 1` ✓ → `SPK E qty 1` ⛔ ditolak", "cycleSteps": [{"label": "SPB1 2 x Rp 5.000", "badge": "✓", "type": "ok"}, {"label": "SPB2 3 x Rp 5.500", "badge": "✓", "type": "ok"}, {"label": "SPB3 1 x Rp 6.000", "badge": "✓", "type": "ok"}, {"label": "SPB4 2 x Rp 4.000", "badge": "✓", "type": "ok"}, {"label": "SPK A qty 1", "badge": "✓", "type": "ok"}, {"label": "SPK B qty 3", "badge": "✓", "type": "ok"}, {"label": "SPK C qty 3", "badge": "✓", "type": "ok"}, {"label": "SPK D qty 1", "badge": "✓", "type": "ok"}, {"label": "SPK E qty 1", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPK A qty 1 tersimpan"}, {"ok": true, "text": "SPK A mengambil SPB1 x1"}, {"ok": true, "text": "Nilai SPK A = 5.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "SPK B qty 3 tersimpan"}, {"ok": true, "text": "SPK B mengambil SPB1 x1 lalu SPB2 x2"}, {"ok": true, "text": "Nilai SPK B = 5.000 + 2 x 5.500 = 16.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (3)"}, {"ok": true, "text": "SPK C qty 3 tersimpan"}, {"ok": true, "text": "SPK C mengambil SPB2 x1, SPB3 x1, SPB4 x1"}, {"ok": true, "text": "Nilai SPK C = 5.500 + 6.000 + 4.000 = 15.500"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0003/XI/2026 = qty SPK (3)"}, {"ok": true, "text": "SPK D qty 1 tersimpan"}, {"ok": true, "text": "SPK D mengambil SPB4 x1"}, {"ok": true, "text": "Nilai SPK D = 4.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0004/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "SPK E qty 1 setelah stok habis ditolak validasi (HTTP 422)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S43", "title": "FIFO normal stok REUSE tanpa perbaikan: 4 SPB yang sama, lalu satu SPK qty 8", "category": "F", "categoryName": "FIFO normal (SPB1 2x5.000, SPB2 3x5.500, SPB3 1x6.000, SPB4 2x4.000)", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB1 2 x Rp 5.000` ✓ → `SPB2 3 x Rp 5.500` ✓ → `SPB3 1 x Rp 6.000` ✓ → `SPB4 2 x Rp 4.000` ✓ → `SPK qty 8` ✓", "cycleSteps": [{"label": "SPB1 2 x Rp 5.000", "badge": "✓", "type": "ok"}, {"label": "SPB2 3 x Rp 5.500", "badge": "✓", "type": "ok"}, {"label": "SPB3 1 x Rp 6.000", "badge": "✓", "type": "ok"}, {"label": "SPB4 2 x Rp 4.000", "badge": "✓", "type": "ok"}, {"label": "SPK qty 8", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK qty 8 tersimpan"}, {"ok": true, "text": "SPK mengambil SPB1 x2, SPB2 x3, SPB3 x1, SPB4 x2"}, {"ok": true, "text": "Nilai SPK = 10.000 + 16.500 + 6.000 + 8.000 = 40.500"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (8)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S44", "title": "FIFO dengan perbaikan di lapisan tengah: 4 SPB yang sama, 1 ban dari SPB2 diperbaiki @1.000; SPK 2, 3, 3", "category": "F", "categoryName": "FIFO normal (SPB1 2x5.000, SPB2 3x5.500, SPB3 1x6.000, SPB4 2x4.000)", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB1 2 x Rp 5.000` ✓ → `SPB2 3 x Rp 5.500` ✓ → `SPB3 1 x Rp 6.000` ✓ → `SPB4 2 x Rp 4.000` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 1.000` ✓ → `SPK A qty 2` ✓ → `SPK B qty 3` ✓ → `SPK C qty 3` ✓", "cycleSteps": [{"label": "SPB1 2 x Rp 5.000", "badge": "✓", "type": "ok"}, {"label": "SPB2 3 x Rp 5.500", "badge": "✓", "type": "ok"}, {"label": "SPB3 1 x Rp 6.000", "badge": "✓", "type": "ok"}, {"label": "SPB4 2 x Rp 4.000", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 1.000", "badge": "✓", "type": "ok"}, {"label": "SPK A qty 2", "badge": "✓", "type": "ok"}, {"label": "SPK B qty 3", "badge": "✓", "type": "ok"}, {"label": "SPK C qty 3", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "SPK A qty 2 tersimpan"}, {"ok": true, "text": "SPK A mengambil SPB1 x2"}, {"ok": true, "text": "Nilai SPK A = 2 x 5.000 = 10.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (2)"}, {"ok": true, "text": "SPK B qty 3 tersimpan"}, {"ok": true, "text": "SPK B mengambil SPB2 x3"}, {"ok": true, "text": "Nilai SPK B = (5.500 + 1.000) + 2 x 5.500 = 17.500"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0002/XI/2026 = qty SPK (3)"}, {"ok": true, "text": "SPK C qty 3 tersimpan"}, {"ok": true, "text": "SPK C mengambil SPB3 x1 lalu SPB4 x2"}, {"ok": true, "text": "Nilai SPK C = 6.000 + 2 x 4.000 = 14.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0003/XI/2026 = qty SPK (3)"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S45", "title": "Edit SPBS ber-SPBP: qty dinaikkan dari 1 menjadi 2 padahal PG hanya 1", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pihak 3 > kantor @Rp 200.000` ✓ → `Edit SPBS` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pihak 3 > kantor @Rp 200.000", "badge": "✓", "type": "ok"}, {"label": "Edit SPBS", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "Edit SPBS qty 2 ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak boleh lebih besar dari qty di PG\""}, {"ok": true, "text": "SPBP tidak berubah setelah edit ditolak"}], "notes": [], "oldCode": ["Edit SPBS qty 2 ditolak validasi (HTTP 422) dengan pesan memuat \"qty tidak boleh lebih besar dari qty di PG\" — HTTP 500: Attempt to read property \"qty\" on null [ErrorException @ PenerimaanstokQtyRule.php:104]"], "currentCode": []}, {"code": "S46", "title": "PG 3 ban, SPBS pertama 2 ban (YA + SPB), lalu SPBS kedua 1 ban (YA + SPB) dari PG yang sama", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG kantor > sementara` ✓ → `PGDO sementara > pihak 3` ✓ → `SPBS pertama` ✓ → `SPBS kedua` ⛔ ditolak", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG kantor > sementara", "badge": "✓", "type": "ok"}, {"label": "PGDO sementara > pihak 3", "badge": "✓", "type": "ok"}, {"label": "SPBS pertama", "badge": "✓", "type": "ok"}, {"label": "SPBS kedua", "badge": "⛔ ditolak", "type": "reject"}], "checks": [{"ok": true, "text": "SPBS kedua tidak menghasilkan error 500"}], "notes": [], "oldCode": ["SPBS kedua tidak menghasilkan error 500 — HTTP 500: Attempt to read property \"qty\" on null [ErrorException @ PenerimaanstokQtyRule.php:104]"], "currentCode": []}, {"code": "S47", "title": "Edit PG kantor > sementara yang sudah memakai approval (sebelum PGDO), lalu siklus dilanjutkan sampai SPK", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `cekvalidasi EDIT PG` ✓ boleh → `Edit PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi EDIT PG", "badge": "✓ boleh", "type": "allow"}, {"label": "Edit PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Edit PG (keterangan diubah) tersimpan"}, {"ok": true, "text": "approvalstokpg.nobukti_pg tetap nomor PG"}, {"ok": true, "text": "Kondisi PG setelah edit sama dengan setelah disimpan (nilai 0, tanpa FIFO, tanpa jurnal, kartu stok sama)"}, {"ok": true, "text": "SPK 1 ban tersimpan"}, {"ok": true, "text": "Nilai keluar = 500.000 + 200.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Kondisi PG setelah edit sama dengan setelah disimpan (nilai 0, tanpa FIFO, tanpa jurnal, kartu stok sama) — {\"total_detail\":500000,\"baris_fifo\":1,\"jurnal\":false,\"kartu\":{\"SIMSPBP S47 28466521\":{\"kantor\":{\"qty\":0,\"nilai\":0},\"sementara\":{\"qty\":1,\"nilai\":0}}}}", "SPK 1 ban tersimpan — HTTP 422: qty: Ada masalah pada Fifo stok", "Nilai keluar = 500.000 + 200.000 — SPK tidak tersimpan"], "currentCode": []}, {"code": "S48", "title": "PG 2 ban ber-approval diedit (sebelum PGDO), lalu siklus dilanjutkan sampai SPK", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "🔧 Baru diperbaiki", "statusKey": "fixed", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `Edit PG` ✓ → `PGDO` ✓ → `SPBS` ✓ → `SPK qty 1+1` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "Edit PG", "badge": "✓", "type": "ok"}, {"label": "PGDO", "badge": "✓", "type": "ok"}, {"label": "SPBS", "badge": "✓", "type": "ok"}, {"label": "SPK qty 1+1", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Edit PG A + B tersimpan"}, {"ok": true, "text": "Kondisi PG setelah edit sama dengan setelah disimpan"}, {"ok": true, "text": "SPK A + B tersimpan"}, {"ok": true, "text": "Nilai keluar A = 500.000 + 100.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}, {"ok": true, "text": "Nilai keluar B = 600.000 + 150.000"}, {"ok": true, "text": "Qty keluar kartu stok SPK 0001/XI/2026 = qty SPK (1)"}], "notes": [], "oldCode": ["Langkah persiapan gagal: PG A + B kantor > sementara — HTTP 500: SQLSTATE[23000]: Cannot insert duplicate key row in object 'dbo.jurnalumumheader' with unique index 'jurnalumumheader_nobukti_unique'. The duplicate key value is (PG 0001/XI/2026). [UniqueConstraintViolationException @ Connection.php:838]"], "currentCode": []}, {"code": "S49", "title": "Un-approval PG penambahan nilai sebelum PGDO/SPBS (belum ada SPBP) tetap diizinkan", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `Un-approval PG penambahan nilai` ✓", "cycleSteps": [{"label": "SPB", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "Un-approval PG penambahan nilai", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Un-approval PG (belum ada SPBP) tersimpan"}], "notes": [], "oldCode": [], "currentCode": []}, {"code": "S50", "title": "Hapus SPB tanpa SPBP dan hapus PG sebelum PGDO tetap diizinkan (form dan API)", "category": "G", "categoryName": "Edit SPBS/PG yang sudah dalam siklus, un-approval, dan hapus", "status": "✅ Benar dari awal", "statusKey": "pass", "cycleRaw": "`SPB X` ✓ → `cekvalidasi DELETE SPB X` ✓ boleh → `Hapus SPB X` ✓ → `SPB Y` ✓ → `Approval stok PG` ✓ → `PG` ✓ → `cekvalidasi DELETE PG Y` ✓ boleh → `Hapus PG Y` ✓", "cycleSteps": [{"label": "SPB X", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE SPB X", "badge": "✓ boleh", "type": "allow"}, {"label": "Hapus SPB X", "badge": "✓", "type": "ok"}, {"label": "SPB Y", "badge": "✓", "type": "ok"}, {"label": "Approval stok PG", "badge": "✓", "type": "ok"}, {"label": "PG", "badge": "✓", "type": "ok"}, {"label": "cekvalidasi DELETE PG Y", "badge": "✓ boleh", "type": "allow"}, {"label": "Hapus PG Y", "badge": "✓", "type": "ok"}], "checks": [{"ok": true, "text": "Form hapus SPB tanpa SPBP tidak diblok"}, {"ok": true, "text": "Hapus SPB tanpa SPBP tersimpan"}, {"ok": true, "text": "Form hapus PG sebelum PGDO tidak diblok"}, {"ok": true, "text": "Hapus PG sebelum PGDO tersimpan"}], "notes": [], "oldCode": [], "currentCode": []}]};
+const CATEGORIES = RAW_DATA.categories;
+const SCENARIOS = RAW_DATA.scenarios;
+const SCENARIO_MAP = Object.fromEntries(SCENARIOS.map(s => [s.code, s]));
+
+const PIPELINE_STAGES = [
+  {
+    id: 'spb',
+    step: 'Tahap 1',
+    name: 'SPB',
+    route: 'Stok masuk ke gudang kantor',
+    desc: 'Dokumen penerimaan awal stok (ban/aki) ke gudang kantor dengan harga beli satuan. Menjadi lapisan FIFO dasar serta rujukan asal bagi SPBP.',
+    related: ['S01', 'S02', 'S07', 'S33', 'S42', 'S50']
+  },
+  {
+    id: 'approval',
+    step: 'Tahap 2',
+    name: 'Approval Stok PG',
+    route: 'Persetujuan perbaikan penambahan nilai',
+    desc: 'Wajib dibuat sebelum PG kantor → sementara untuk stok yang akan diperbaiki. Memiliki masa berlaku dan tidak boleh di-unapprove setelah SPBP terbentuk.',
+    related: ['S14', 'S15', 'S35', 'S37', 'S49']
+  },
+  {
+    id: 'pg',
+    step: 'Tahap 3',
+    name: 'PG',
+    route: 'Gudang kantor → gudang sementara',
+    desc: 'Memindahkan stok ke gudang sementara. Jika memakai approval: nilai PG dinolkan, tanpa FIFO, dan tanpa jurnal. Tidak boleh dihapus bila sudah dirujuk PGDO.',
+    related: ['S12', 'S25', 'S31', 'S38', 'S47', 'S48']
+  },
+  {
+    id: 'pgdo',
+    step: 'Tahap 4',
+    name: 'PGDO',
+    route: 'Gudang sementara → gudang pihak 3',
+    desc: 'Mengirim stok dari gudang sementara ke pihak 3 untuk diperbaiki. Rincian nobukti harus nomor PG yang valid dan qty harus sesuai rincian.',
+    related: ['S03', 'S09', 'S21', 'S24', 'S27']
+  },
+  {
+    id: 'spbs',
+    step: 'Tahap 5',
+    name: 'SPBS → SPBP',
+    route: 'Gudang pihak 3 → kantor (Auto SPBP)',
+    desc: 'Menerima stok selesai diperbaiki dari pihak 3 dengan biaya perbaikan (termasuk diskon). Jika status SPBP = YA & SPB asal diisi, SPBP dibuat otomatis.',
+    related: ['S08', 'S16', 'S18', 'S23', 'S26', 'S28', 'S30', 'S32', 'S36', 'S45', 'S46']
+  },
+  {
+    id: 'spk',
+    step: 'Tahap 6',
+    name: 'SPK',
+    route: 'Stok keluar (FIFO + nilai SPBP)',
+    desc: 'Mengeluarkan stok dari gudang kantor secara FIFO dan membebankan biaya penambahan nilai dari SPBP secara proporsional sesuai qty yang diperbaiki.',
+    related: ['S04', 'S05', 'S06', 'S13', 'S34', 'S39', 'S40', 'S41', 'S44']
+  }
+];
+
+const FIX_GROUPS = [
+  {
+    num: 1,
+    title: 'Pembagian qty penambahan nilai di FIFO',
+    files: ['PengeluaranStokDetailFifo'],
+    desc: 'Di kode lama, qty yang diberi penambahan nilai tidak sama dengan qty SPK (SPK 2 ban tercatat 1 di S04, SPK 1 tercatat 2 di S05, SPBP over-used di S40). S39 bahkan macet infinite loop dan menambah 34.412 baris FIFO selama ±50 menit.',
+    codes: ['S04', 'S05', 'S39', 'S40']
+  },
+  {
+    num: 2,
+    title: 'Validasi siklus PG / PGDO / SPBS',
+    files: ['CekApprovalPGRule', 'PenerimaanstokQtyRule', 'StorePenerimaanStokDetailRequest'],
+    desc: 'Di kode lama, dokumen tidak valid malah tersimpan (PG pihak 3 → sementara tanpa SPBP, SPBS memilih SPB habis, PGDO rincian bukan PG, approval kedaluwarsa), bahkan salah satu kasus PGDO berakhir HTTP 500.',
+    codes: ['S16', 'S23', 'S24', 'S37']
+  },
+  {
+    num: 3,
+    title: 'Error 500 saat edit SPBS atau membuat SPBS kedua',
+    files: ['PenerimaanstokQtyRule.php:104'],
+    desc: 'Di kode lama muncul ErrorException: Attempt to read property "qty" on null saat edit SPBS maupun membuat SPBS kedua dari PG yang sama.',
+    codes: ['S28', 'S45', 'S46']
+  },
+  {
+    num: 4,
+    title: 'Pengaman hapus dan un-approval',
+    files: ['ValidasiDestroyPenerimaanStokHeader', 'PenerimaanStokHeaderController', 'ApprovalPGPenambahanNilaiRequest', 'PenerimaanStokHeader'],
+    desc: 'Di kode lama, SPBS yang sudah dipakai SPK, PG yang dirujuk PGDO, SPBP langsung, dan SPB asal ber-SPBP semuanya bisa dihapus. Approval PG ber-SPBP juga bisa di-unapprove.',
+    codes: ['S30', 'S31', 'S32', 'S33', 'S35']
+  },
+  {
+    num: 5,
+    title: 'Jurnal PG dobel untuk PG berisi lebih dari 1 ban',
+    files: ['PenerimaanStokHeader'],
+    desc: 'Di kode lama, PG berisi 2 ban gagal disimpan dengan HTTP 500 duplicate key pada jurnalumumheader_nobukti_unique. Kini jurnal dibuat sekali per bukti.',
+    codes: ['S38', 'S48']
+  },
+  {
+    num: 6,
+    title: 'Edit PG yang sudah memakai approval',
+    files: ['PenerimaanStokHeader'],
+    desc: 'Di kode lama, setelah PG diedit, nilainya kembali terisi, FIFO terbentuk, dan SPK berikutnya ditolak ("Ada masalah pada Fifo stok"). Kini efek approval diterapkan ulang saat edit.',
+    codes: ['S47']
+  }
+];
+
+const SIM_SCENARIOS = [
+  {
+    id: 'S04',
+    code: 'S04',
+    title: 'SPB qty 3 diperbaiki semua, SPK 2 lalu SPK 1',
+    status: 'fixed',
+    setup: 'SPB: 3 ban @Rp 500.000 · SPBS/SPBP: 3 ban @Rp 100.000 (nilai ideal per ban = Rp 600.000)',
+    modes: ['new', 'old'],
+    steps: {
+      new: [
+        {
+          label: 'Kondisi Awal (Setelah SPBS)',
+          summary: 'Stok gudang kantor: 3 ban @500.000. Pool SPBP tersedia: 3 unit @100.000.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'avail' },
+            { id: 'B2', label: 'Ban #2', val: '500k', state: 'avail' },
+            { id: 'B3', label: 'Ban #3', val: '500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'avail' },
+            { id: 'P2', label: 'SPBP #2', val: '+100k', state: 'avail' },
+            { id: 'P3', label: 'SPBP #3', val: '+100k', state: 'avail' }
+          ],
+          output: 'Belum ada SPK.'
+        },
+        {
+          label: 'SPK #1 (qty 2)',
+          summary: 'SPK 2 ban mengambil 2 ban SPB + 2 unit SPBP. Kartu stok mencatat keluar 2.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'take' },
+            { id: 'B2', label: 'Ban #2', val: '500k', state: 'take' },
+            { id: 'B3', label: 'Ban #3', val: '500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'take' },
+            { id: 'P2', label: 'SPBP #2', val: '+100k', state: 'take' },
+            { id: 'P3', label: 'SPBP #3', val: '+100k', state: 'avail' }
+          ],
+          output: '✅ Nilai keluar SPK #1 = 2 × (500.000 + 100.000) = Rp 1.200.000 · Kartu stok: 2'
+        },
+        {
+          label: 'SPK #2 (qty 1)',
+          summary: 'SPK 1 ban mengambil sisa 1 ban SPB + sisa 1 unit SPBP.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'used' },
+            { id: 'B2', label: 'Ban #2', val: '500k', state: 'used' },
+            { id: 'B3', label: 'Ban #3', val: '500k', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'used' },
+            { id: 'P2', label: 'SPBP #2', val: '+100k', state: 'used' },
+            { id: 'P3', label: 'SPBP #3', val: '+100k', state: 'take' }
+          ],
+          output: '✅ Nilai keluar SPK #2 = 1 × (500.000 + 100.000) = Rp 600.000 · Kartu stok: 1'
+        }
+      ],
+      old: [
+        {
+          label: 'Kondisi Awal (Setelah SPBS)',
+          summary: 'Stok gudang kantor: 3 ban @500.000. Pool SPBP tersedia: 3 unit @100.000.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'avail' },
+            { id: 'B2', label: 'Ban #2', val: '500k', state: 'avail' },
+            { id: 'B3', label: 'Ban #3', val: '500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'avail' },
+            { id: 'P2', label: 'SPBP #2', val: '+100k', state: 'avail' },
+            { id: 'P3', label: 'SPBP #3', val: '+100k', state: 'avail' }
+          ],
+          output: 'Belum ada SPK.'
+        },
+        {
+          label: 'SPK #1 (qty 2) — BUG!',
+          summary: 'Kode lama keliru membagi qty penambahan nilai: SPK qty 2 hanya tercatat keluar 1 ban di kartu stok!',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'error' },
+            { id: 'B2', label: 'Ban #2', val: '500k (terlewat!)', state: 'avail' },
+            { id: 'B3', label: 'Ban #3', val: '500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'error' },
+            { id: 'P2', label: 'SPBP #2', val: '+100k', state: 'avail' },
+            { id: 'P3', label: 'SPBP #3', val: '+100k', state: 'avail' }
+          ],
+          output: '❌ Harapan Rp 1.200.000 (qty 2), hasil kode lama Rp 600.000 (kartu stok hanya mencatat 1)!'
+        }
+      ]
+    }
+  },
+  {
+    id: 'S13',
+    code: 'S13',
+    title: 'Ban yang sama diperbaiki 2x sebelum SPK (Masih Terbuka)',
+    status: 'open',
+    setup: 'SPB: 1 ban @Rp 500.000 · SPBP #1: 1 @Rp 100.000 · SPBP #2: 1 @Rp 50.000',
+    modes: ['ideal', 'new', 'old'],
+    steps: {
+      ideal: [
+        {
+          label: 'SPK #1 (qty 1) — Harapan Bisnis (Pilihan A)',
+          summary: 'Karena SPBP #2 merujuk sebagai perbaikan ulang dari SPBP #1, kedua biaya perbaikan menumpuk ke 1 ban yang sama.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1 (Induk)', val: '+100k', state: 'take' },
+            { id: 'P2', label: 'SPBP #2 (Ulang)', val: '+50k', state: 'take' }
+          ],
+          output: '🎯 Harapan: 500.000 + 100.000 + 50.000 = Rp 650.000'
+        }
+      ],
+      new: [
+        {
+          label: 'SPK #1 (qty 1) — Kode Baru (Masih Kurang Rp 50k)',
+          summary: 'FIFO menganggap SPBP #1 dan SPBP #2 sebagai 2 ban berbeda. SPK qty 1 berhenti setelah mengambil SPBP #1, sehingga SPBP #2 tertinggal.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k', state: 'take' },
+            { id: 'P2', label: 'SPBP #2 (Yatim)', val: '+50k (tidak terambil)', state: 'error' }
+          ],
+          output: '❌ Hasil kode baru: Rp 600.000 (harapan Rp 650.000). Biaya SPBP #2 Rp 50.000 hilang.'
+        }
+      ],
+      old: [
+        {
+          label: 'SPK #1 (qty 1) — Kode Lama (Hanya Ambil SPBP #2)',
+          summary: 'Kode lama malah membebankan SPBP kedua saja (Rp 50.000) dan melewatkan SPBP pertama (Rp 100.000).',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'error' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1 (Terlewat)', val: '+100k', state: 'error' },
+            { id: 'P2', label: 'SPBP #2', val: '+50k', state: 'take' }
+          ],
+          output: '❌ Hasil kode lama: Rp 550.000 (harapan Rp 650.000).'
+        }
+      ]
+    }
+  },
+  {
+    id: 'S39',
+    code: 'S39',
+    title: 'SPB qty 5 (1 ban @100k + 4 ban @150k); SPK 2 lalu SPK 3',
+    status: 'fixed',
+    setup: 'SPB: 5 ban @500.000 · SPBP #1: 1 @100.000 · SPBP #2: 4 @150.000',
+    modes: ['new', 'old'],
+    steps: {
+      new: [
+        {
+          label: 'SPK #1 (qty 2)',
+          summary: 'Mengambil 1 unit dari SPBP #1 (@100k) + 1 unit dari SPBP #2 (@150k). Total 2 unit pas.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1', val: '500k', state: 'take' },
+            { id: 'B2', label: 'Ban #2', val: '500k', state: 'take' },
+            { id: 'B3', label: 'Ban #3..5', val: '3×500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1 (1/1)', val: '+100k', state: 'take' },
+            { id: 'P2', label: 'SPBP #2 (1/4)', val: '+150k', state: 'take' },
+            { id: 'P3', label: 'SPBP #2 (sisa 3)', val: '3×+150k', state: 'avail' }
+          ],
+          output: '✅ SPK #1 = (500k+100k) + (500k+150k) = Rp 1.250.000 · Kartu stok: 2'
+        },
+        {
+          label: 'SPK #2 (qty 3)',
+          summary: 'Mengambil sisa 3 ban SPB + sisa 3 unit SPBP #2 (@150k). Total SPBP terpakai: 1 + 4 = 5.',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1..2', val: 'habis', state: 'used' },
+            { id: 'B3', label: 'Ban #3..5', val: '3×500k', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: 'habis (1)', state: 'used' },
+            { id: 'P2', label: 'SPBP #2 (1/4)', val: 'terpakai', state: 'used' },
+            { id: 'P3', label: 'SPBP #2 (3/4)', val: '3×+150k', state: 'take' }
+          ],
+          output: '✅ SPK #2 = 3 × (500k + 150k) = Rp 1.950.000 · SPBP #1=1, SPBP #2=4'
+        }
+      ],
+      old: [
+        {
+          label: 'SPK #1 (qty 2) — Over-allocation!',
+          summary: 'Kode lama mencatat SPBP #1 qty 1 + SPBP #2 qty 2 = 3 unit penambahan nilai untuk SPK yang cuma 2 ban!',
+          spbUnits: [
+            { id: 'B1', label: 'Ban #1..2', val: '2×500k', state: 'error' },
+            { id: 'B3', label: 'Ban #3..5', val: '3×500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+100k (1)', state: 'error' },
+            { id: 'P2', label: 'SPBP #2', val: '+150k (2!)', state: 'error' }
+          ],
+          output: '❌ 3 unit penambahan nilai tercatat untuk 2 ban!'
+        },
+        {
+          label: 'SPK #2 (qty 3) — INFINITE LOOP 💥',
+          summary: 'Sistem masuk loop tanpa akhir: terus menulis baris pengeluaranstokpenambahannilaififo untuk SPBP 0002 sampai 34.412 baris (total qty 68.824) selama ±50 menit sebelum dihentikan manual!',
+          spbUnits: [
+            { id: 'B3', label: 'SPK #2', val: 'MACET 50 MENIT', state: 'error' }
+          ],
+          spbpUnits: [
+            { id: 'P2', label: 'SPBP #2', val: '34.412 baris / qty 68.824!', state: 'error' }
+          ],
+          output: '💥 Infinite loop! Harus dihentikan manual & di-rollback.'
+        }
+      ]
+    }
+  },
+  {
+    id: 'S40',
+    code: 'S40',
+    title: 'SPB lama 1@400k + SPB baru 3@500k (2 diperbaiki @200k)',
+    status: 'fixed',
+    setup: 'SPB Lama: 1 @400k · SPB Baru: 3 @500k (2 unit punya SPBP @200k) · SPK 2, 1, 1',
+    modes: ['new', 'old'],
+    steps: {
+      new: [
+        {
+          label: 'SPK #1 (qty 2)',
+          summary: 'Mengambil 1 ban SPB lama (@400k) + 1 ban SPB baru (@500k + 200k). Sisa SPBP = 1.',
+          spbUnits: [
+            { id: 'L1', label: 'SPB Lama #1', val: '400k', state: 'take' },
+            { id: 'N1', label: 'SPB Baru #1', val: '500k', state: 'take' },
+            { id: 'N2', label: 'SPB Baru #2..3', val: '2×500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: '+200k', state: 'take' },
+            { id: 'P2', label: 'SPBP #2', val: '+200k', state: 'avail' }
+          ],
+          output: '✅ SPK #1 = 400.000 + (500.000 + 200.000) = Rp 1.100.000'
+        },
+        {
+          label: 'SPK #2 (qty 1)',
+          summary: 'Mengambil SPB Baru #2 (@500k) + sisa SPBP #2 (@200k). Jatah SPBP kini habis (2/2).',
+          spbUnits: [
+            { id: 'L1', label: 'SPB Lama #1', val: 'habis', state: 'used' },
+            { id: 'N1', label: 'SPB Baru #1', val: 'habis', state: 'used' },
+            { id: 'N2', label: 'SPB Baru #2', val: '500k', state: 'take' },
+            { id: 'N3', label: 'SPB Baru #3', val: '500k', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1', val: 'habis', state: 'used' },
+            { id: 'P2', label: 'SPBP #2', val: '+200k', state: 'take' }
+          ],
+          output: '✅ SPK #2 = 500.000 + 200.000 = Rp 700.000'
+        },
+        {
+          label: 'SPK #3 (qty 1)',
+          summary: 'Mengambil SPB Baru #3 tanpa penambahan nilai karena jatah 2 unit SPBP sudah habis.',
+          spbUnits: [
+            { id: 'N3', label: 'SPB Baru #3', val: '500k (tanpa SPBP)', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP #1..2', val: 'Habis (2/2)', state: 'used' }
+          ],
+          output: '✅ SPK #3 = Rp 500.000 · Total SPBP terpakai = 2 (tidak melebihi qty SPBS)'
+        }
+      ],
+      old: [
+        {
+          label: 'SPK #3 (qty 1) — SPBP Terpakai Melebihi Qty!',
+          summary: 'Meskipun jatah SPBP hanya 2 unit, kode lama masih membebankan +200.000 ke SPK #3 sehingga total SPBP terpakai menjadi 3!',
+          spbUnits: [
+            { id: 'N3', label: 'SPB Baru #3', val: '500k', state: 'error' }
+          ],
+          spbpUnits: [
+            { id: 'P3', label: 'SPBP "Hantu" #3', val: '+200k (melebihi qty 2!)', state: 'error' }
+          ],
+          output: '❌ Harapan Rp 500.000, hasil kode lama Rp 700.000 (SPBP 0001/XI/2026 terpakai 3 dari 2)!'
+        }
+      ]
+    }
+  },
+  {
+    id: 'S44',
+    code: 'S44',
+    title: 'FIFO 4 lapisan + perbaikan di lapisan tengah (SPB2)',
+    status: 'pass',
+    setup: 'SPB1 2×5.000 · SPB2 3×5.500 (1 diperbaiki @1.000) · SPB3 1×6.000 · SPB4 2×4.000',
+    modes: ['new'],
+    steps: {
+      new: [
+        {
+          label: 'SPK A (qty 2) — Lapisan SPB1',
+          summary: 'Mengambil penuh 2 unit dari SPB1 (@5.000). SPBP milik SPB2 belum tersentuh.',
+          spbUnits: [
+            { id: 'L1', label: 'SPB1 (2)', val: '2×5.000', state: 'take' },
+            { id: 'L2', label: 'SPB2 (3)', val: '3×5.500', state: 'avail' },
+            { id: 'L3', label: 'SPB3 (1)', val: '1×6.000', state: 'avail' },
+            { id: 'L4', label: 'SPB4 (2)', val: '2×4.000', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP (SPB2)', val: '+1.000 (1 unit)', state: 'avail' }
+          ],
+          output: '✅ Nilai SPK A = 2 × 5.000 = Rp 10.000'
+        },
+        {
+          label: 'SPK B (qty 3) — Lapisan SPB2 + SPBP',
+          summary: 'Mengambil 3 unit SPB2: 1 unit mendapat +1.000 dari SPBP, 2 unit lainnya tanpa penambahan nilai.',
+          spbUnits: [
+            { id: 'L1', label: 'SPB1', val: 'habis', state: 'used' },
+            { id: 'L2', label: 'SPB2 (3)', val: '3×5.500', state: 'take' },
+            { id: 'L3', label: 'SPB3 (1)', val: '1×6.000', state: 'avail' },
+            { id: 'L4', label: 'SPB4 (2)', val: '2×4.000', state: 'avail' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP (SPB2)', val: '+1.000 (dipakai 1)', state: 'take' }
+          ],
+          output: '✅ Nilai SPK B = (5.500 + 1.000) + 2 × 5.500 = Rp 17.500'
+        },
+        {
+          label: 'SPK C (qty 3) — Lapisan SPB3 & SPB4',
+          summary: 'Mengambil sisa SPB3 (1×6.000) + SPB4 (2×4.000). Semua lapisan habis bersih.',
+          spbUnits: [
+            { id: 'L1', label: 'SPB1..2', val: 'habis', state: 'used' },
+            { id: 'L3', label: 'SPB3 (1)', val: '1×6.000', state: 'take' },
+            { id: 'L4', label: 'SPB4 (2)', val: '2×4.000', state: 'take' }
+          ],
+          spbpUnits: [
+            { id: 'P1', label: 'SPBP (SPB2)', val: 'habis', state: 'used' }
+          ],
+          output: '✅ Nilai SPK C = 6.000 + 2 × 4.000 = Rp 14.000'
+        }
+      ]
+    }
+  }
+];
+
+// State
+const state = {
+  tab: 'overview',
+  activePipe: 'spb',
+  search: '',
+  status: 'all',
+  category: 'all',
+  diffOnly: false,
+  err500Only: false,
+  rejectOnly: false,
+  expanded: new Set(),
+  modalCode: null,
+  simId: 'S04',
+  simMode: 'new',
+  simStep: 0
+};
+
+// Helpers
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function statusLabel(key) {
+  if (key === 'pass') return '✅ Benar dari awal';
+  if (key === 'fixed') return '🔧 Baru diperbaiki';
+  return '❌ Belum diperbaiki';
+}
+
+function renderCycleHtml(steps) {
+  return `<div class="cycle-flow">${steps.map((st, idx) => {
+    const arrow = idx < steps.length - 1 ? '<span class="cycle-arrow">→</span>' : '';
+    return `<span class="cycle-step ${st.type}">${esc(st.label)} <span style="opacity:0.85">${esc(st.badge)}</span></span>${arrow}`;
+  }).join('')}</div>`;
+}
+
+function renderScenarioDetailBody(sc) {
+  let html = `
+    <div class="block-label">
+      <span>Alur Siklus</span>
+      <span style="font-weight:400; text-transform:none;">✓ tersimpan · ⛔ ditolak (422) · 🚫 diblok form · ✓ boleh</span>
+    </div>
+    ${renderCycleHtml(sc.cycleSteps)}
+  `;
+
+  if (sc.oldCode.length > 0 || sc.currentCode.length > 0 || sc.notes.length > 0) {
+    html += `<div class="diff-grid">`;
+    if (sc.oldCode.length > 0) {
+      html += `
+        <div class="diff-box old">
+          <div class="diff-title">⏮️ Di kode lama (sebelum perbaikan · ea625d31b)</div>
+          <ul>${sc.oldCode.map(x => `<li><span>✗</span><span>${esc(x)}</span></li>`).join('')}</ul>
+        </div>
+      `;
+    }
+    if (sc.currentCode.length > 0) {
+      html += `
+        <div class="diff-box current">
+          <div class="diff-title">⚠️ Di kode sekarang (ebf120973 · masih terbuka)</div>
+          <ul>${sc.currentCode.map(x => `<li><span>✗</span><span>${esc(x)}</span></li>`).join('')}</ul>
+        </div>
+      `;
+    }
+    if (sc.notes.length > 0) {
+      html += `
+        <div class="diff-box note">
+          <div class="diff-title">📝 Catatan</div>
+          <ul>${sc.notes.map(x => `<li><span>•</span><span>${esc(x)}</span></li>`).join('')}</ul>
+        </div>
+      `;
+    }
+    html += `</div>`;
+  }
+
+  if (sc.checks.length > 0) {
+    html += `
+      <div class="block-label"><span>Yang Dicek (${sc.checks.length} poin)</span></div>
+      <ul class="check-list">
+        ${sc.checks.map(c => `
+          <li class="check-item">
+            <span class="check-icon ${c.ok ? 'ok' : 'fail'}">${c.ok ? '✓' : '✗'}</span>
+            <span>${esc(c.text)}</span>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+  }
+  return html;
+}
+
+// Render Overview
+function renderPipeline() {
+  const nodesEl = document.getElementById('pipelineNodes');
+  nodesEl.innerHTML = PIPELINE_STAGES.map((st, idx) => `
+    <button class="pipe-node ${state.activePipe === st.id ? 'active' : ''}" onclick="selectPipe('${st.id}')">
+      <div class="pipe-step-num">${st.step}</div>
+      <div class="pipe-name">${st.name}</div>
+      <div class="pipe-route">${st.route}</div>
+    </button>
+    ${idx < PIPELINE_STAGES.length - 1 ? '<div class="pipe-arrow">→</div>' : ''}
+  `).join('');
+
+  const active = PIPELINE_STAGES.find(s => s.id === state.activePipe);
+  const detEl = document.getElementById('pipelineDetail');
+  detEl.innerHTML = `
+    <div class="pipe-detail-text">
+      <div class="pipe-detail-title">${active.step}: ${active.name} (${active.route})</div>
+      <div class="pipe-detail-desc">${active.desc}</div>
+      <div class="chip-row">
+        <span style="font-size:12px; color:var(--text-soft); margin-right:4px;">Skenario terkait:</span>
+        ${active.related.map(code => {
+          const s = SCENARIO_MAP[code];
+          return `<button class="sc-chip ${s ? s.statusKey : ''}" onclick="openModal('${code}')">${code}</button>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function selectPipe(id) {
+  state.activePipe = id;
+  renderPipeline();
+}
+
+function renderFixGroups() {
+  const el = document.getElementById('fixGroupsContainer');
+  let html = FIX_GROUPS.map(g => `
+    <div class="fix-card">
+      <div class="fix-head">
+        <div class="fix-title">${g.num}. ${esc(g.title)}</div>
+        <div class="chip-row">
+          ${g.codes.map(c => `<button class="sc-chip fixed" onclick="openModal('${c}')">${c}</button>`).join('')}
+        </div>
+      </div>
+      <div class="chip-row" style="margin-bottom:8px;">
+        ${g.files.map(f => `<span class="inline-code" style="font-size:11px;">${esc(f)}</span>`).join('')}
+      </div>
+      <p class="fix-desc" style="margin-bottom:0;">${esc(g.desc)}</p>
+    </div>
+  `).join('');
+
+  html += `
+    <div class="fix-card open-card">
+      <div class="fix-head">
+        <div class="fix-title">⚠️ Masih terbuka: S13 (ban diperbaiki 2x)</div>
+        <button class="sc-chip open" onclick="openModal('S13')">S13</button>
+      </div>
+      <p class="fix-desc" style="margin-bottom:0;">
+        Hasil berubah dari <strong>Rp 550.000</strong> (kode lama) menjadi <strong>Rp 600.000</strong> (kode baru), tetapi belum sesuai harapan <strong>Rp 650.000</strong>. Lihat tab <em>Temuan Terbuka & Panduan</em> untuk opsi solusi.
+      </p>
+    </div>
+  `;
+  el.innerHTML = html;
+}
+
+function renderCategoryBreakdown() {
+  const el = document.getElementById('categoryBreakdown');
+  el.innerHTML = CATEGORIES.map(cat => {
+    const list = SCENARIOS.filter(s => s.category === cat.id);
+    const nPass = list.filter(s => s.statusKey === 'pass').length;
+    const nFixed = list.filter(s => s.statusKey === 'fixed').length;
+    const nOpen = list.filter(s => s.statusKey === 'open').length;
+    const total = list.length;
+    return `
+      <div class="cat-row" onclick="jumpToExplorer('all', '${cat.id}')">
+        <div class="cat-row-head">
+          <span class="cat-row-name">${cat.id}. ${esc(cat.name)}</span>
+          <span class="cat-row-nums">${total} (${nPass}✅ ${nFixed}🔧 ${nOpen ? nOpen + '❌' : ''})</span>
+        </div>
+        <div class="mini-bar">
+          ${nPass ? `<div style="width:${(nPass/total)*100}%; background:var(--pass)"></div>` : ''}
+          ${nFixed ? `<div style="width:${(nFixed/total)*100}%; background:var(--fixed)"></div>` : ''}
+          ${nOpen ? `<div style="width:${(nOpen/total)*100}%; background:var(--open)"></div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Explorer Logic
+function getFilteredScenarios() {
+  const q = state.search.trim().toLowerCase();
+  return SCENARIOS.filter(s => {
+    if (state.status !== 'all' && s.statusKey !== state.status) return false;
+    if (state.category !== 'all' && s.category !== state.category) return false;
+    if (state.diffOnly && s.oldCode.length === 0) return false;
+    if (state.err500Only && !s.oldCode.some(t => t.includes('HTTP 500'))) return false;
+    if (state.rejectOnly && !s.cycleSteps.some(st => st.type === 'reject' || st.type === 'block')) return false;
+    if (q) {
+      const hay = [
+        s.code, s.title, s.categoryName, s.cycleRaw,
+        ...s.checks.map(c => c.text),
+        ...s.oldCode, ...s.currentCode, ...s.notes
+      ].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderExplorer() {
+  const filtered = getFilteredScenarios();
+  document.getElementById('resultCount').textContent = `Menampilkan ${filtered.length} dari ${SCENARIOS.length} skenario`;
+
+  const listEl = document.getElementById('scenarioList');
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="empty-state">Tidak ada skenario yang cocok dengan filter saat ini.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(s => {
+    const isExp = state.expanded.has(s.code);
+    const hasErr500 = s.oldCode.some(t => t.includes('HTTP 500'));
+    return `
+      <div class="sc-item status-${s.statusKey} ${isExp ? 'expanded' : ''}" id="card-${s.code}">
+        <div class="sc-header" onclick="toggleScenario('${s.code}')">
+          <div class="sc-header-left">
+            <span class="sc-code">${s.code}</span>
+            <span class="sc-cat-tag">${s.category}</span>
+            <span class="sc-title">${esc(s.title)}</span>
+          </div>
+          <div class="sc-header-right">
+            ${hasErr500 ? '<span class="sc-cat-tag" style="color:var(--open); background:var(--open-bg);">500 lama</span>' : ''}
+            <span class="status-badge ${s.statusKey}">${statusLabel(s.statusKey)}</span>
+            <button class="icon-btn" style="padding:4px 8px; font-size:11.5px;" onclick="event.stopPropagation(); openModal('${s.code}')" title="Buka di modal fokus">⤢</button>
+            <span class="chev">▼</span>
+          </div>
+        </div>
+        <div class="sc-body">
+          ${isExp ? renderScenarioDetailBody(s) : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleScenario(code) {
+  if (state.expanded.has(code)) {
+    state.expanded.delete(code);
+  } else {
+    state.expanded.add(code);
+  }
+  renderExplorer();
+}
+
+function jumpToExplorer(status = 'all', category = 'all') {
+  state.status = status;
+  state.category = category;
+  state.diffOnly = false;
+  state.err500Only = false;
+  state.rejectOnly = false;
+  state.search = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('categoryFilter').value = category;
+  syncFilterUI();
+  switchTab('explorer');
+  renderExplorer();
+}
+
+function syncFilterUI() {
+  document.querySelectorAll('#statusFilterPills .pill-btn').forEach(btn => {
+    const st = btn.dataset.status;
+    btn.className = 'pill-btn';
+    if (st === state.status) {
+      btn.classList.add(st === 'all' ? 'active' : `active-${st}`);
+    }
+  });
+  document.getElementById('toggleDiffOnly').classList.toggle('toggle-on', state.diffOnly);
+  document.getElementById('toggleErr500').classList.toggle('toggle-on', state.err500Only);
+  document.getElementById('toggleReject').classList.toggle('toggle-on', state.rejectOnly);
+}
+
+// Modal
+function openModal(code) {
+  const sc = SCENARIO_MAP[code];
+  if (!sc) return;
+  state.modalCode = code;
+  const idx = SCENARIOS.findIndex(s => s.code === code);
+
+  document.getElementById('modalBadges').innerHTML = `
+    <span class="sc-code">${sc.code}</span>
+    <span class="sc-cat-tag">${sc.category}. ${esc(sc.categoryName)}</span>
+    <span class="status-badge ${sc.statusKey}">${statusLabel(sc.statusKey)}</span>
+  `;
+  document.getElementById('modalTitle').textContent = sc.title;
+  document.getElementById('modalBody').innerHTML = renderScenarioDetailBody(sc);
+  document.getElementById('modalCounter').textContent = `Skenario ${idx + 1} dari ${SCENARIOS.length}`;
+  document.getElementById('prevModalBtn').disabled = idx <= 0;
+  document.getElementById('nextModalBtn').disabled = idx >= SCENARIOS.length - 1;
+
+  const modal = document.getElementById('scenarioModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeModal() {
+  const modal = document.getElementById('scenarioModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  state.modalCode = null;
+}
+
+function stepModal(delta) {
+  if (!state.modalCode) return;
+  const idx = SCENARIOS.findIndex(s => s.code === state.modalCode);
+  const next = SCENARIOS[idx + delta];
+  if (next) openModal(next.code);
+}
+
+// Visual FIFO Simulator
+function renderSimulator() {
+  const sidebar = document.getElementById('simSidebar');
+  sidebar.innerHTML = `<div style="font-size:12px; font-weight:700; color:var(--text-soft); padding:2px 4px;">PILIH SKENARIO FIFO</div>` +
+    SIM_SCENARIOS.map(sim => `
+      <button class="sim-choice ${state.simId === sim.id ? 'active' : ''}" onclick="selectSim('${sim.id}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong class="mono">${sim.code}</strong>
+          <span class="status-badge ${sim.status}" style="font-size:10.5px; padding:1px 7px;">${sim.status === 'fixed' ? '🔧 Diperbaiki' : sim.status === 'open' ? '❌ Terbuka' : '✅ Normal'}</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--text-muted); line-height:1.35;">${esc(sim.title)}</div>
+      </button>
+    `).join('');
+
+  const sim = SIM_SCENARIOS.find(s => s.id === state.simId);
+  if (!sim.modes.includes(state.simMode)) state.simMode = sim.modes[0];
+  const steps = sim.steps[state.simMode];
+  if (state.simStep >= steps.length) state.simStep = steps.length - 1;
+  const cur = steps[state.simStep];
+
+  const modeLabels = {
+    new: 'Kode Baru (ebf120973)',
+    old: 'Kode Lama (ea625d31b)',
+    ideal: 'Harapan Bisnis (Pilihan A)'
+  };
+
+  const stage = document.getElementById('simStage');
+  stage.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <span class="sc-code">${sim.code}</span>
+          <strong style="font-size:16px;">${esc(sim.title)}</strong>
+        </div>
+        <div style="font-size:12.5px; color:var(--text-soft);">${esc(sim.setup)}</div>
+      </div>
+      <div class="mode-switch">
+        ${sim.modes.map(m => `
+          <button class="mode-btn ${state.simMode === m ? 'active-' + m : ''}" onclick="setSimMode('${m}')">${modeLabels[m]}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="padding:12px 14px; border-radius:9px; background:var(--bg-subtle); border:1px solid var(--border); margin-bottom:14px;">
+      <div style="font-weight:700; font-size:13.5px; margin-bottom:3px;">Langkah ${state.simStep + 1}/${steps.length}: ${esc(cur.label)}</div>
+      <div style="font-size:13px; color:var(--text-muted);">${esc(cur.summary)}</div>
+    </div>
+
+    <div class="fifo-vis-grid">
+      <div class="fifo-box">
+        <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:var(--text-soft);">Lapisan Stok SPB (FIFO)</div>
+        <div class="unit-row">
+          ${cur.spbUnits.map(u => `
+            <div class="unit-tile ${u.state === 'take' ? 'active-take' : u.state === 'used' ? 'used' : u.state === 'error' ? 'error-tile' : ''}">
+              <div style="font-weight:700;">${esc(u.label)}</div>
+              <div class="mono" style="font-size:11.5px; color:var(--text-muted);">${esc(u.val)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="fifo-box">
+        <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:var(--text-soft);">Pool Penambahan Nilai (SPBP)</div>
+        <div class="unit-row">
+          ${cur.spbpUnits.map(u => `
+            <div class="unit-tile ${u.state === 'take' ? 'active-take' : u.state === 'used' ? 'used' : u.state === 'error' ? 'error-tile' : ''}">
+              <div style="font-weight:700;">${esc(u.label)}</div>
+              <div class="mono" style="font-size:11.5px; color:var(--text-muted);">${esc(u.val)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:12px 14px; border-radius:9px; border:1px solid var(--border-strong); background:var(--bg); font-weight:600; font-size:13.5px; margin-bottom:14px;">
+      ${esc(cur.output)}
+    </div>
+
+    <div class="step-controls">
+      <div style="display:flex; gap:8px;">
+        <button class="icon-btn" ${state.simStep === 0 ? 'disabled' : ''} onclick="stepSim(-1)">← Langkah Sebelumnya</button>
+        <button class="icon-btn" ${state.simStep >= steps.length - 1 ? 'disabled' : ''} onclick="stepSim(1)">Langkah Berikutnya →</button>
+      </div>
+      <button class="sc-chip ${sim.status}" onclick="openModal('${sim.code}')">Lihat Rincian Lengkap ${sim.code}</button>
+    </div>
+  `;
+}
+
+function selectSim(id) {
+  state.simId = id;
+  const sim = SIM_SCENARIOS.find(s => s.id === id);
+  state.simMode = sim.modes[0];
+  state.simStep = 0;
+  renderSimulator();
+}
+
+function setSimMode(mode) {
+  state.simMode = mode;
+  state.simStep = 0;
+  renderSimulator();
+}
+
+function stepSim(delta) {
+  state.simStep = Math.max(0, state.simStep + delta);
+  renderSimulator();
+}
+
+// Tabs
+function switchTab(tabId) {
+  state.tab = tabId;
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `tab-${tabId}`);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Init
+function init() {
+  // Populate category select
+  const catSel = document.getElementById('categoryFilter');
+  CATEGORIES.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    const count = SCENARIOS.filter(s => s.category === c.id).length;
+    opt.textContent = `${c.id}. ${c.name} (${count})`;
+    catSel.appendChild(opt);
+  });
+
+  // Tab navigation
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Filters
+  document.getElementById('searchInput').addEventListener('input', e => {
+    state.search = e.target.value;
+    renderExplorer();
+  });
+  catSel.addEventListener('change', e => {
+    state.category = e.target.value;
+    renderExplorer();
+  });
+  document.querySelectorAll('#statusFilterPills .pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.status = btn.dataset.status;
+      syncFilterUI();
+      renderExplorer();
+    });
+  });
+  document.getElementById('toggleDiffOnly').addEventListener('click', () => {
+    state.diffOnly = !state.diffOnly;
+    syncFilterUI();
+    renderExplorer();
+  });
+  document.getElementById('toggleErr500').addEventListener('click', () => {
+    state.err500Only = !state.err500Only;
+    syncFilterUI();
+    renderExplorer();
+  });
+  document.getElementById('toggleReject').addEventListener('click', () => {
+    state.rejectOnly = !state.rejectOnly;
+    syncFilterUI();
+    renderExplorer();
+  });
+  document.getElementById('expandAllBtn').addEventListener('click', () => {
+    getFilteredScenarios().forEach(s => state.expanded.add(s.code));
+    renderExplorer();
+  });
+  document.getElementById('collapseAllBtn').addEventListener('click', () => {
+    state.expanded.clear();
+    renderExplorer();
+  });
+  document.getElementById('resetFilterBtn').addEventListener('click', () => {
+    state.search = '';
+    state.status = 'all';
+    state.category = 'all';
+    state.diffOnly = false;
+    state.err500Only = false;
+    state.rejectOnly = false;
+    document.getElementById('searchInput').value = '';
+    catSel.value = 'all';
+    syncFilterUI();
+    renderExplorer();
+  });
+
+  // Modal events
+  document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+  document.getElementById('prevModalBtn').addEventListener('click', () => stepModal(-1));
+  document.getElementById('nextModalBtn').addEventListener('click', () => stepModal(1));
+  document.getElementById('scenarioModal').addEventListener('click', e => {
+    if (e.target.id === 'scenarioModal') closeModal();
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && state.modalCode) closeModal();
+    if (state.modalCode && e.key === 'ArrowLeft') stepModal(-1);
+    if (state.modalCode && e.key === 'ArrowRight') stepModal(1);
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && !state.modalCode) {
+      e.preventDefault();
+      switchTab('explorer');
+      document.getElementById('searchInput').focus();
+    }
+  });
+
+  // Theme toggle
+  const themeBtn = document.getElementById('themeToggle');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    themeBtn.textContent = isDark ? '🌙 Gelap' : '☀️ Terang';
+  });
+
+  // Copy command
+  document.getElementById('copyCmdBtn').addEventListener('click', () => {
+    const cmd = document.getElementById('testCmd').textContent;
+    navigator.clipboard.writeText(cmd).then(() => {
+      const btn = document.getElementById('copyCmdBtn');
+      btn.textContent = '✓ Tersalin';
+      setTimeout(() => btn.textContent = 'Salin', 1800);
+    });
+  });
+
+  // Initial renders
+  renderPipeline();
+  renderFixGroups();
+  renderCategoryBreakdown();
+  renderExplorer();
+  renderSimulator();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -366,7 +366,7 @@ export function GalleryClient({ presentations }: GalleryClientProps) {
                       {item.format}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-zinc-950/65 px-2.5 py-1 font-mono text-[11px] font-medium text-zinc-200 backdrop-blur-md">
-                      {item.slideCount} slide
+                      {item.countLabel}
                     </span>
                   </div>
 
@@ -481,7 +481,7 @@ export function GalleryClient({ presentations }: GalleryClientProps) {
                       {item.format}
                     </span>
                     <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-                      {item.slideCount} slide • {item.sizeLabel} • {item.updatedLabel}
+                      {item.countLabel} • {item.sizeLabel} • {item.updatedLabel}
                     </span>
                   </div>
 
